@@ -26,14 +26,14 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 def main():
-    st.title("📈 Tracker d'Investissements")
+    st.title("Tracker d'Investissements")
     st.markdown("---")
     
     data = load_data()
     
     # Sidebar pour saisie des revenus
     with st.sidebar:
-        st.header("💰 Saisie des Revenus")
+        st.header("Saisie des Revenus")
         
         revenu_net = st.number_input(
             "Revenu net mensuel (€)",
@@ -63,7 +63,7 @@ def main():
                 step=1
             )
         
-        if st.button("💾 Enregistrer Revenu"):
+        if st.button("Enregistrer Revenu"):
             if revenu_net > 0:
                 periode_actuelle = f"{annee_revenu}-{mois_revenu:02d}"
                 
@@ -108,30 +108,30 @@ def main():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("💼 Budget Total", f"{budget_total}€")
+        st.metric("Budget Total", f"{budget_total}€")
         
     with col2:
-        st.metric("📊 Total Investi", f"{total_investi:.2f}€")
+        st.metric("Total Investi", f"{total_investi:.0f}€")
         
     with col3:
-        st.metric("💵 Total Restant", f"{total_restant:.2f}€")
+        st.metric("Total Restant", f"{total_restant:.0f}€")
     
     st.markdown("---")
     
     # Tabs pour Bourse et Crypto
-    tab_bourse, tab_crypto, tab_revenus, tab_overview = st.tabs(["📊 Bourse", "₿ Crypto", "💰 Revenus", "📈 Vue d'ensemble"])
+    tab_bourse, tab_crypto, tab_revenus, tab_overview = st.tabs(["Bourse", "Crypto", "Revenus", "Vue d'ensemble"])
     
     with tab_bourse:
-        st.header("📊 Investissements Bourse")
+        st.header("Investissements Bourse")
         
         # Métriques spécifiques bourse
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
-            st.metric("💼 Budget Bourse", f"{budget_bourse}€")
+            st.metric("Budget Bourse", f"{budget_bourse}€")
         with col_m2:
-            st.metric("📊 Investi Bourse", f"{budget_utilise_bourse:.2f}€")
+            st.metric("Investi Bourse", f"{budget_utilise_bourse:.0f}€")
         with col_m3:
-            st.metric("💵 Restant Bourse", f"{budget_restant_bourse:.2f}€")
+            st.metric("Restant Bourse", f"{budget_restant_bourse:.0f}€")
         
         st.markdown("---")
         
@@ -147,7 +147,7 @@ def main():
             )
             
             hors_budget_bourse = st.checkbox(
-                "💰 Hors budget (conversion/existant)",
+                "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant ou une conversion qui ne doit pas être déduit du budget",
                 key="bourse_hors_budget"
             )
@@ -163,7 +163,7 @@ def main():
             date_bourse = st.date_input("Date d'achat", key="bourse_date")
             prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
             
-            if st.button("➕ Ajouter Investissement Bourse"):
+            if st.button("Ajouter Investissement Bourse"):
                 if symbole_bourse and montant_bourse > 0 and prix_unitaire_bourse > 0:
                     quantite = montant_bourse / prix_unitaire_bourse
                     data["bourse"].append({
@@ -189,16 +189,16 @@ def main():
                 st.info("Aucun investissement bourse enregistré")
     
     with tab_crypto:
-        st.header("₿ Investissements Crypto")
+        st.header("Investissements Crypto")
         
         # Métriques spécifiques crypto
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
-            st.metric("₿ Budget Crypto", f"{budget_crypto}€")
+            st.metric("Budget Crypto", f"{budget_crypto}€")
         with col_m2:
-            st.metric("₿ Investi Crypto", f"{budget_utilise_crypto:.2f}€")
+            st.metric("Investi Crypto", f"{budget_utilise_crypto:.0f}€")
         with col_m3:
-            st.metric("💰 Restant Crypto", f"{budget_restant_crypto:.2f}€")
+            st.metric("Restant Crypto", f"{budget_restant_crypto:.0f}€")
         
         st.markdown("---")
         
@@ -213,7 +213,7 @@ def main():
                 key="crypto_symbole"
             )
             hors_budget_crypto = st.checkbox(
-                "💰 Hors budget (conversion/existant)",
+                "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant ou une conversion qui ne doit pas être déduit du budget",
                 key="crypto_hors_budget"
             )
@@ -229,7 +229,7 @@ def main():
             date_crypto = st.date_input("Date d'achat", key="crypto_date")
             prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
             
-            if st.button("➕ Ajouter Investissement Crypto"):
+            if st.button("Ajouter Investissement Crypto"):
                 if symbole_crypto and montant_crypto > 0 and prix_unitaire_crypto > 0:
                     quantite = montant_crypto / prix_unitaire_crypto
                     data["crypto"].append({
@@ -255,7 +255,7 @@ def main():
                 st.info("Aucun investissement crypto enregistré")
     
     with tab_revenus:
-        st.header("💰 Historique des Revenus")
+        st.header("Historique des Revenus")
         
         if data["revenus"]:
             df_revenus = pd.DataFrame(data["revenus"])
@@ -290,17 +290,17 @@ def main():
             
             with col1:
                 total_revenus = df_revenus["montant"].sum()
-                st.metric("💰 Total des Revenus", f"{total_revenus:,.0f}€")
+                st.metric("Total des Revenus", f"{total_revenus:,.0f}€")
             
             with col2:
                 total_investissement_bourse = df_revenus.get("investissement_disponible_bourse", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
                 total_investissement_crypto = df_revenus.get("investissement_disponible_crypto", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
                 total_investissement = total_investissement_bourse + total_investissement_crypto
-                st.metric("💼 Total Budget Investissement", f"{total_investissement:.2f}€")
+                st.metric("Total Budget Investissement", f"{total_investissement:.0f}€")
             
             with col3:
                 nb_mois = len(df_revenus)
-                st.metric("📅 Nombre de Mois", f"{nb_mois}")
+                st.metric("Nombre de Mois", f"{nb_mois}")
             
             # Graphique évolution des revenus
             fig_revenus = px.bar(
@@ -316,7 +316,7 @@ def main():
             st.info("Aucun revenu enregistré pour le moment")
     
     with tab_overview:
-        st.header("📈 Vue d'ensemble")
+        st.header("Vue d'ensemble")
         
         if data["bourse"] or data["crypto"]:
             # Graphique évolution temporelle
