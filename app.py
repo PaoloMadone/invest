@@ -84,7 +84,7 @@ def main():
                         "investissement_disponible_crypto": montant_investissement_crypto
                     })
                     save_data(data)
-                    st.success(f"Revenu enregistré! {montant_investissement_bourse:.2f}€ pour bourse, {montant_investissement_crypto:.2f}€ pour crypto")
+                    st.success(f"Revenu enregistré! {montant_investissement_bourse:,.2f}€ pour bourse, {montant_investissement_crypto:,.2f}€ pour crypto".replace(",", " "))
                     st.rerun()
     
     # Calcul des budgets d'investissement séparés
@@ -108,13 +108,13 @@ def main():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Budget Total", f"{budget_total}€")
+        st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
         
     with col2:
-        st.metric("Total Investi", f"{total_investi:.0f}€")
+        st.metric("Total Investi", f"{total_investi:,.0f}€".replace(",", " "))
         
     with col3:
-        st.metric("Total Restant", f"{total_restant:.0f}€")
+        st.metric("Total Restant", f"{total_restant:,.0f}€".replace(",", " "))
     
     st.markdown("---")
     
@@ -127,11 +127,11 @@ def main():
         # Métriques spécifiques bourse
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
-            st.metric("Budget Bourse", f"{budget_bourse}€")
+            st.metric("Budget Bourse", f"{budget_bourse:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Bourse", f"{budget_utilise_bourse:.0f}€")
+            st.metric("Investi Bourse", f"{budget_utilise_bourse:,.0f}€".replace(",", " "))
         with col_m3:
-            st.metric("Restant Bourse", f"{budget_restant_bourse:.0f}€")
+            st.metric("Restant Bourse", f"{budget_restant_bourse:,.0f}€".replace(",", " "))
         
         st.markdown("---")
         
@@ -194,11 +194,11 @@ def main():
         # Métriques spécifiques crypto
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
-            st.metric("Budget Crypto", f"{budget_crypto}€")
+            st.metric("Budget Crypto", f"{budget_crypto:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Crypto", f"{budget_utilise_crypto:.0f}€")
+            st.metric("Investi Crypto", f"{budget_utilise_crypto:,.0f}€".replace(",", " "))
         with col_m3:
-            st.metric("Restant Crypto", f"{budget_restant_crypto:.0f}€")
+            st.metric("Restant Crypto", f"{budget_restant_crypto:,.0f}€".replace(",", " "))
         
         st.markdown("---")
         
@@ -290,27 +290,18 @@ def main():
             
             with col1:
                 total_revenus = df_revenus["montant"].sum()
-                st.metric("Total des Revenus", f"{total_revenus:,.0f}€")
+                st.metric("Total des Revenus", f"{total_revenus:,.0f}€".replace(",", " "))
             
             with col2:
                 total_investissement_bourse = df_revenus.get("investissement_disponible_bourse", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
                 total_investissement_crypto = df_revenus.get("investissement_disponible_crypto", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
                 total_investissement = total_investissement_bourse + total_investissement_crypto
-                st.metric("Total Budget Investissement", f"{total_investissement:.0f}€")
+                st.metric("Total Budget Investissement", f"{total_investissement:,.0f}€".replace(",", " "))
             
             with col3:
                 nb_mois = len(df_revenus)
                 st.metric("Nombre de Mois", f"{nb_mois}")
             
-            # Graphique évolution des revenus
-            fig_revenus = px.bar(
-                df_revenus,
-                x="periode",
-                y="montant",
-                title="Évolution des revenus mensuels",
-                labels={"montant": "Revenu Net (€)", "periode": "Période"}
-            )
-            st.plotly_chart(fig_revenus, use_container_width=True)
             
         else:
             st.info("Aucun revenu enregistré pour le moment")
@@ -344,28 +335,7 @@ def main():
                 df_all = df_all.sort_values("date")
                 df_all["montant_cumule"] = df_all["montant"].cumsum()
                 
-                fig_timeline = px.line(
-                    df_all,
-                    x="date",
-                    y="montant_cumule",
-                    title="Évolution cumulative des investissements",
-                    labels={"montant_cumule": "Montant cumulé (€)", "date": "Date"}
-                )
-                st.plotly_chart(fig_timeline, use_container_width=True)
                 
-                # Répartition Bourse vs Crypto
-                repartition_data = {
-                    "Type": ["Bourse", "Crypto"],
-                    "Montant": [budget_utilise_bourse, budget_utilise_crypto]
-                }
-                
-                fig_repartition = px.pie(
-                    repartition_data,
-                    values="Montant",
-                    names="Type",
-                    title="Répartition Bourse vs Crypto"
-                )
-                st.plotly_chart(fig_repartition, use_container_width=True)
         else:
             st.info("Aucun investissement enregistré pour le moment")
 
