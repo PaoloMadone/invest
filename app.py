@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime, date
 import json
 import os
+import math
 
 st.set_page_config(
     page_title="Tracker d'Investissements",
@@ -77,7 +78,8 @@ def main():
                 st.rerun()
     
     # Calcul du budget d'investissement total
-    budget_total = sum([r["investissement_disponible"] for r in data["revenus"]])
+    budget_total_brut = sum([r["investissement_disponible"] for r in data["revenus"]])
+    budget_total = math.ceil(budget_total_brut)
     budget_utilise_bourse = sum([b["montant"] for b in data["bourse"]])
     budget_utilise_crypto = sum([c["montant"] for c in data["crypto"]])
     budget_restant = budget_total - budget_utilise_bourse - budget_utilise_crypto
@@ -86,7 +88,7 @@ def main():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("💼 Budget Total", f"{budget_total:.2f}€")
+        st.metric("💼 Budget Total", f"{budget_total}€")
     
     with col2:
         st.metric("📊 Investi Bourse", f"{budget_utilise_bourse:.2f}€")
@@ -110,14 +112,19 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
             
-            symbole_bourse = st.text_input("Symbole (ex: AAPL)", key="bourse_symbole")
+            symbole_bourse = st.selectbox(
+                "Symbole",
+                options=["HIWS"],
+                key="bourse_symbole"
+            )
             montant_bourse = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=float(budget_restant),
+                max_value=float(budget_restant) if budget_restant > 0 else 0.0,
                 value=0.0,
                 step=10.0,
-                key="bourse_montant"
+                key="bourse_montant",
+                help=f"Budget restant disponible: {budget_restant:.2f}€"
             )
             date_bourse = st.date_input("Date d'achat", key="bourse_date")
             prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
@@ -163,14 +170,19 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
             
-            symbole_crypto = st.text_input("Symbole (ex: BTC)", key="crypto_symbole")
+            symbole_crypto = st.selectbox(
+                "Symbole",
+                options=["BTC"],
+                key="crypto_symbole"
+            )
             montant_crypto = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=float(budget_restant),
+                max_value=float(budget_restant) if budget_restant > 0 else 0.0,
                 value=0.0,
                 step=10.0,
-                key="crypto_montant"
+                key="crypto_montant",
+                help=f"Budget restant disponible: {budget_restant:.2f}€"
             )
             date_crypto = st.date_input("Date d'achat", key="crypto_date")
             prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
