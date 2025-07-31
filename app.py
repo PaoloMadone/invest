@@ -185,15 +185,6 @@ def main():
                 
                 st.subheader("Portfolio Bourse")
                 st.dataframe(df_bourse, use_container_width=True)
-                
-                # Graphique répartition par symbole
-                fig_pie = px.pie(
-                    df_bourse,
-                    values="montant",
-                    names="symbole",
-                    title="Répartition des investissements bourse"
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
             else:
                 st.info("Aucun investissement bourse enregistré")
     
@@ -260,15 +251,6 @@ def main():
                 
                 st.subheader("Portfolio Crypto")
                 st.dataframe(df_crypto, use_container_width=True)
-                
-                # Graphique répartition par symbole
-                fig_pie = px.pie(
-                    df_crypto,
-                    values="montant",
-                    names="symbole",
-                    title="Répartition des investissements crypto"
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
             else:
                 st.info("Aucun investissement crypto enregistré")
     
