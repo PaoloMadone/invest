@@ -132,22 +132,13 @@ def main():
                 key="bourse_hors_budget"
             )
             
-            # Ajuster la limite selon si c'est hors budget ou non
-            if hors_budget_bourse:
-                max_montant_bourse = None
-                help_text_bourse = "Hors budget - aucune limite"
-            else:
-                max_montant_bourse = float(budget_restant) if budget_restant > 0 else 0.0
-                help_text_bourse = f"Budget restant disponible: {budget_restant:.2f}€"
-            
             montant_bourse = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=max_montant_bourse,
                 value=0.0,
                 step=10.0,
                 key="bourse_montant",
-                help=help_text_bourse
+                help="Saisissez le montant de votre investissement"
             )
             date_bourse = st.date_input("Date d'achat", key="bourse_date")
             prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
@@ -205,22 +196,13 @@ def main():
                 key="crypto_hors_budget"
             )
             
-            # Ajuster la limite selon si c'est hors budget ou non
-            if hors_budget_crypto:
-                max_montant_crypto = None
-                help_text_crypto = "Hors budget - aucune limite"
-            else:
-                max_montant_crypto = float(budget_restant) if budget_restant > 0 else 0.0
-                help_text_crypto = f"Budget restant disponible: {budget_restant:.2f}€"
-            
             montant_crypto = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=max_montant_crypto,
                 value=0.0,
                 step=10.0,
                 key="crypto_montant",
-                help=help_text_crypto
+                help="Saisissez le montant de votre investissement"
             )
             date_crypto = st.date_input("Date d'achat", key="crypto_date")
             prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
@@ -278,6 +260,7 @@ def main():
             # Affichage du tableau
             st.subheader("Récapitulatif des revenus")
             df_display = df_revenus[["mois_nom", "annee", "montant", "investissement_disponible"]].copy()
+            df_display["investissement_disponible"] = df_display["investissement_disponible"].round().astype(int)
             df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Investissement (€)"]
             st.dataframe(df_display, use_container_width=True)
             
