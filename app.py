@@ -181,7 +181,7 @@ def main():
         with col2:
             if data["bourse"]:
                 df_bourse = pd.DataFrame(data["bourse"])
-                df_bourse["date"] = pd.to_datetime(df_bourse["date"])
+                df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
                 
                 st.subheader("Portfolio Bourse")
                 st.dataframe(df_bourse, use_container_width=True)
@@ -247,7 +247,7 @@ def main():
         with col2:
             if data["crypto"]:
                 df_crypto = pd.DataFrame(data["crypto"])
-                df_crypto["date"] = pd.to_datetime(df_crypto["date"])
+                df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
                 
                 st.subheader("Portfolio Crypto")
                 st.dataframe(df_crypto, use_container_width=True)
