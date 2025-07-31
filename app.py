@@ -65,17 +65,25 @@ def main():
         
         if st.button("💾 Enregistrer Revenu"):
             if revenu_net > 0:
-                montant_investissement = revenu_net * 0.10
-                data["revenus"].append({
-                    "mois": mois_revenu,
-                    "annee": int(annee_revenu),
-                    "periode": f"{annee_revenu}-{mois_revenu:02d}",
-                    "montant": revenu_net,
-                    "investissement_disponible": montant_investissement
-                })
-                save_data(data)
-                st.success(f"Revenu enregistré! {montant_investissement:.2f}€ disponible pour investissement")
-                st.rerun()
+                periode_actuelle = f"{annee_revenu}-{mois_revenu:02d}"
+                
+                # Vérifier si le revenu pour cette période existe déjà
+                periode_existante = any(r["periode"] == periode_actuelle for r in data["revenus"])
+                
+                if periode_existante:
+                    st.error(f"Un revenu pour {periode_actuelle} existe déjà!")
+                else:
+                    montant_investissement = revenu_net * 0.10
+                    data["revenus"].append({
+                        "mois": mois_revenu,
+                        "annee": int(annee_revenu),
+                        "periode": periode_actuelle,
+                        "montant": revenu_net,
+                        "investissement_disponible": montant_investissement
+                    })
+                    save_data(data)
+                    st.success(f"Revenu enregistré! {montant_investissement:.2f}€ disponible pour investissement")
+                    st.rerun()
     
     # Calcul du budget d'investissement total
     budget_total_brut = sum([r["investissement_disponible"] for r in data["revenus"]])
