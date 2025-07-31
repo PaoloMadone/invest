@@ -36,30 +36,45 @@ def main():
         
         revenu_net = st.number_input(
             "Revenu net mensuel (€)",
-            min_value=0.0,
-            value=0.0,
-            step=100.0,
-            format="%.2f",
+            min_value=0,
+            value=0,
+            step=100,
             help="Saisissez votre revenu net mensuel"
         )
         
-        date_revenu = st.date_input(
-            "Date du revenu",
-            value=date.today(),
-            help="Date à laquelle vous avez reçu ce revenu"
-        )
+        col_mois, col_annee = st.columns(2)
+        with col_mois:
+            mois_revenu = st.selectbox(
+                "Mois",
+                options=list(range(1, 13)),
+                format_func=lambda x: [
+                    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+                ][x-1],
+                index=date.today().month - 1
+            )
+        with col_annee:
+            annee_revenu = st.number_input(
+                "Année",
+                min_value=2020,
+                max_value=2030,
+                value=date.today().year,
+                step=1
+            )
         
         if st.button("💾 Enregistrer Revenu"):
             if revenu_net > 0:
                 montant_investissement = revenu_net * 0.10
                 data["revenus"].append({
-                    "date": date_revenu.isoformat(),
+                    "mois": mois_revenu,
+                    "annee": int(annee_revenu),
+                    "periode": f"{annee_revenu}-{mois_revenu:02d}",
                     "montant": revenu_net,
                     "investissement_disponible": montant_investissement
                 })
                 save_data(data)
                 st.success(f"Revenu enregistré! {montant_investissement:.2f}€ disponible pour investissement")
-                st.experimental_rerun()
+                st.rerun()
     
     # Calcul du budget d'investissement total
     budget_total = sum([r["investissement_disponible"] for r in data["revenus"]])
@@ -119,7 +134,7 @@ def main():
                     })
                     save_data(data)
                     st.success("Investissement bourse ajouté!")
-                    st.experimental_rerun()
+                    st.rerun()
         
         with col2:
             if data["bourse"]:
@@ -172,7 +187,7 @@ def main():
                     })
                     save_data(data)
                     st.success("Investissement crypto ajouté!")
-                    st.experimental_rerun()
+                    st.rerun()
         
         with col2:
             if data["crypto"]:
