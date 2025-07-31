@@ -110,7 +110,7 @@ def main():
     st.markdown("---")
     
     # Tabs pour Bourse et Crypto
-    tab_bourse, tab_crypto, tab_overview = st.tabs(["📊 Bourse", "₿ Crypto", "📈 Vue d'ensemble"])
+    tab_bourse, tab_crypto, tab_revenus, tab_overview = st.tabs(["📊 Bourse", "₿ Crypto", "💰 Revenus", "📈 Vue d'ensemble"])
     
     with tab_bourse:
         st.header("📊 Investissements Bourse")
@@ -227,6 +227,56 @@ def main():
                 st.plotly_chart(fig_pie, use_container_width=True)
             else:
                 st.info("Aucun investissement crypto enregistré")
+    
+    with tab_revenus:
+        st.header("💰 Historique des Revenus")
+        
+        if data["revenus"]:
+            df_revenus = pd.DataFrame(data["revenus"])
+            
+            # Conversion du mois en nom
+            noms_mois = [
+                "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+            ]
+            df_revenus["mois_nom"] = df_revenus["mois"].apply(lambda x: noms_mois[x-1])
+            
+            # Tri par année et mois
+            df_revenus = df_revenus.sort_values(["annee", "mois"])
+            
+            # Affichage du tableau
+            st.subheader("Récapitulatif des revenus")
+            df_display = df_revenus[["mois_nom", "annee", "montant", "investissement_disponible"]].copy()
+            df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Investissement (€)"]
+            st.dataframe(df_display, use_container_width=True)
+            
+            # Métriques de résumé
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                total_revenus = df_revenus["montant"].sum()
+                st.metric("💰 Total des Revenus", f"{total_revenus:,.0f}€")
+            
+            with col2:
+                total_investissement = df_revenus["investissement_disponible"].sum()
+                st.metric("💼 Total Budget Investissement", f"{total_investissement:.2f}€")
+            
+            with col3:
+                nb_mois = len(df_revenus)
+                st.metric("📅 Nombre de Mois", f"{nb_mois}")
+            
+            # Graphique évolution des revenus
+            fig_revenus = px.bar(
+                df_revenus,
+                x="periode",
+                y="montant",
+                title="Évolution des revenus mensuels",
+                labels={"montant": "Revenu Net (€)", "periode": "Période"}
+            )
+            st.plotly_chart(fig_revenus, use_container_width=True)
+            
+        else:
+            st.info("Aucun revenu enregistré pour le moment")
     
     with tab_overview:
         st.header("📈 Vue d'ensemble")
