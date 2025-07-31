@@ -88,8 +88,8 @@ def main():
                     st.rerun()
     
     # Calcul des budgets d'investissement séparés
-    budget_bourse_brut = sum([r.get("investissement_disponible_bourse", r.get("investissement_disponible", 0)) for r in data["revenus"]])
-    budget_crypto_brut = sum([r.get("investissement_disponible_crypto", r.get("investissement_disponible", 0)) for r in data["revenus"]])
+    budget_bourse_brut = sum([r["investissement_disponible_bourse"] for r in data["revenus"]])
+    budget_crypto_brut = sum([r["investissement_disponible_crypto"] for r in data["revenus"]])
     budget_bourse = math.ceil(budget_bourse_brut)
     budget_crypto = math.ceil(budget_crypto_brut)
     budget_total = budget_bourse + budget_crypto
@@ -273,16 +273,10 @@ def main():
             # Affichage du tableau
             st.subheader("Récapitulatif des revenus")
             
-            # Gestion de la compatibilité avec l'ancien format
-            if "investissement_disponible_bourse" in df_revenus.columns:
-                df_display = df_revenus[["mois_nom", "annee", "montant", "investissement_disponible_bourse", "investissement_disponible_crypto"]].copy()
-                df_display["investissement_disponible_bourse"] = df_display["investissement_disponible_bourse"].round().astype(int)
-                df_display["investissement_disponible_crypto"] = df_display["investissement_disponible_crypto"].round().astype(int)
-                df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Bourse (€)", "Budget Crypto (€)"]
-            else:
-                df_display = df_revenus[["mois_nom", "annee", "montant", "investissement_disponible"]].copy()
-                df_display["investissement_disponible"] = df_display["investissement_disponible"].round().astype(int)
-                df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Investissement (€)"]
+            # Affichage du tableau
+            df_display = df_revenus[["mois_nom", "annee", "montant"]].copy()
+            df_display["budget_total"] = (df_revenus["investissement_disponible_bourse"] + df_revenus["investissement_disponible_crypto"]).round().astype(int)
+            df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Investissement (€)"]
             st.dataframe(df_display, use_container_width=True)
             
             # Métriques de résumé
@@ -293,8 +287,8 @@ def main():
                 st.metric("Total des Revenus", f"{total_revenus:,.0f}€".replace(",", " "))
             
             with col2:
-                total_investissement_bourse = df_revenus.get("investissement_disponible_bourse", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
-                total_investissement_crypto = df_revenus.get("investissement_disponible_crypto", df_revenus.get("investissement_disponible", pd.Series([0]))).sum()
+                total_investissement_bourse = df_revenus["investissement_disponible_bourse"].sum()
+                total_investissement_crypto = df_revenus["investissement_disponible_crypto"].sum()
                 total_investissement = total_investissement_bourse + total_investissement_crypto
                 st.metric("Total Budget Investissement", f"{total_investissement:,.0f}€".replace(",", " "))
             
