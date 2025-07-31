@@ -1,0 +1,251 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, date
+import json
+import os
+
+st.set_page_config(
+    page_title="Tracker d'Investissements",
+    page_icon="📈",
+    layout="wide"
+)
+
+DATA_FILE = "investments_data.json"
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r') as f:
+            return json.load(f)
+    return {"revenus": [], "bourse": [], "crypto": []}
+
+def save_data(data):
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+def main():
+    st.title("📈 Tracker d'Investissements")
+    st.markdown("---")
+    
+    data = load_data()
+    
+    # Sidebar pour saisie des revenus
+    with st.sidebar:
+        st.header("💰 Saisie des Revenus")
+        
+        revenu_net = st.number_input(
+            "Revenu net mensuel (€)",
+            min_value=0.0,
+            value=0.0,
+            step=100.0,
+            format="%.2f",
+            help="Saisissez votre revenu net mensuel"
+        )
+        
+        date_revenu = st.date_input(
+            "Date du revenu",
+            value=date.today(),
+            help="Date à laquelle vous avez reçu ce revenu"
+        )
+        
+        if st.button("💾 Enregistrer Revenu"):
+            if revenu_net > 0:
+                montant_investissement = revenu_net * 0.10
+                data["revenus"].append({
+                    "date": date_revenu.isoformat(),
+                    "montant": revenu_net,
+                    "investissement_disponible": montant_investissement
+                })
+                save_data(data)
+                st.success(f"Revenu enregistré! {montant_investissement:.2f}€ disponible pour investissement")
+                st.experimental_rerun()
+    
+    # Calcul du budget d'investissement total
+    budget_total = sum([r["investissement_disponible"] for r in data["revenus"]])
+    budget_utilise_bourse = sum([b["montant"] for b in data["bourse"]])
+    budget_utilise_crypto = sum([c["montant"] for c in data["crypto"]])
+    budget_restant = budget_total - budget_utilise_bourse - budget_utilise_crypto
+    
+    # Métriques principales
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("💼 Budget Total", f"{budget_total:.2f}€")
+    
+    with col2:
+        st.metric("📊 Investi Bourse", f"{budget_utilise_bourse:.2f}€")
+    
+    with col3:
+        st.metric("₿ Investi Crypto", f"{budget_utilise_crypto:.2f}€")
+    
+    with col4:
+        st.metric("💵 Budget Restant", f"{budget_restant:.2f}€")
+    
+    st.markdown("---")
+    
+    # Tabs pour Bourse et Crypto
+    tab_bourse, tab_crypto, tab_overview = st.tabs(["📊 Bourse", "₿ Crypto", "📈 Vue d'ensemble"])
+    
+    with tab_bourse:
+        st.header("📊 Investissements Bourse")
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.subheader("Nouvel investissement")
+            
+            symbole_bourse = st.text_input("Symbole (ex: AAPL)", key="bourse_symbole")
+            montant_bourse = st.number_input(
+                "Montant (€)",
+                min_value=0.0,
+                max_value=float(budget_restant),
+                value=0.0,
+                step=10.0,
+                key="bourse_montant"
+            )
+            date_bourse = st.date_input("Date d'achat", key="bourse_date")
+            prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
+            
+            if st.button("➕ Ajouter Investissement Bourse"):
+                if symbole_bourse and montant_bourse > 0 and prix_unitaire_bourse > 0:
+                    quantite = montant_bourse / prix_unitaire_bourse
+                    data["bourse"].append({
+                        "date": date_bourse.isoformat(),
+                        "symbole": symbole_bourse.upper(),
+                        "montant": montant_bourse,
+                        "prix_unitaire": prix_unitaire_bourse,
+                        "quantite": quantite
+                    })
+                    save_data(data)
+                    st.success("Investissement bourse ajouté!")
+                    st.experimental_rerun()
+        
+        with col2:
+            if data["bourse"]:
+                df_bourse = pd.DataFrame(data["bourse"])
+                df_bourse["date"] = pd.to_datetime(df_bourse["date"])
+                
+                st.subheader("Portfolio Bourse")
+                st.dataframe(df_bourse, use_container_width=True)
+                
+                # Graphique répartition par symbole
+                fig_pie = px.pie(
+                    df_bourse,
+                    values="montant",
+                    names="symbole",
+                    title="Répartition des investissements bourse"
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.info("Aucun investissement bourse enregistré")
+    
+    with tab_crypto:
+        st.header("₿ Investissements Crypto")
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.subheader("Nouvel investissement")
+            
+            symbole_crypto = st.text_input("Symbole (ex: BTC)", key="crypto_symbole")
+            montant_crypto = st.number_input(
+                "Montant (€)",
+                min_value=0.0,
+                max_value=float(budget_restant),
+                value=0.0,
+                step=10.0,
+                key="crypto_montant"
+            )
+            date_crypto = st.date_input("Date d'achat", key="crypto_date")
+            prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
+            
+            if st.button("➕ Ajouter Investissement Crypto"):
+                if symbole_crypto and montant_crypto > 0 and prix_unitaire_crypto > 0:
+                    quantite = montant_crypto / prix_unitaire_crypto
+                    data["crypto"].append({
+                        "date": date_crypto.isoformat(),
+                        "symbole": symbole_crypto.upper(),
+                        "montant": montant_crypto,
+                        "prix_unitaire": prix_unitaire_crypto,
+                        "quantite": quantite
+                    })
+                    save_data(data)
+                    st.success("Investissement crypto ajouté!")
+                    st.experimental_rerun()
+        
+        with col2:
+            if data["crypto"]:
+                df_crypto = pd.DataFrame(data["crypto"])
+                df_crypto["date"] = pd.to_datetime(df_crypto["date"])
+                
+                st.subheader("Portfolio Crypto")
+                st.dataframe(df_crypto, use_container_width=True)
+                
+                # Graphique répartition par symbole
+                fig_pie = px.pie(
+                    df_crypto,
+                    values="montant",
+                    names="symbole",
+                    title="Répartition des investissements crypto"
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.info("Aucun investissement crypto enregistré")
+    
+    with tab_overview:
+        st.header("📈 Vue d'ensemble")
+        
+        if data["bourse"] or data["crypto"]:
+            # Graphique évolution temporelle
+            all_investments = []
+            
+            for inv in data["bourse"]:
+                all_investments.append({
+                    "date": inv["date"],
+                    "montant": inv["montant"],
+                    "type": "Bourse",
+                    "symbole": inv["symbole"]
+                })
+            
+            for inv in data["crypto"]:
+                all_investments.append({
+                    "date": inv["date"],
+                    "montant": inv["montant"],
+                    "type": "Crypto",
+                    "symbole": inv["symbole"]
+                })
+            
+            if all_investments:
+                df_all = pd.DataFrame(all_investments)
+                df_all["date"] = pd.to_datetime(df_all["date"])
+                df_all = df_all.sort_values("date")
+                df_all["montant_cumule"] = df_all["montant"].cumsum()
+                
+                fig_timeline = px.line(
+                    df_all,
+                    x="date",
+                    y="montant_cumule",
+                    title="Évolution cumulative des investissements",
+                    labels={"montant_cumule": "Montant cumulé (€)", "date": "Date"}
+                )
+                st.plotly_chart(fig_timeline, use_container_width=True)
+                
+                # Répartition Bourse vs Crypto
+                repartition_data = {
+                    "Type": ["Bourse", "Crypto"],
+                    "Montant": [budget_utilise_bourse, budget_utilise_crypto]
+                }
+                
+                fig_repartition = px.pie(
+                    repartition_data,
+                    values="Montant",
+                    names="Type",
+                    title="Répartition Bourse vs Crypto"
+                )
+                st.plotly_chart(fig_repartition, use_container_width=True)
+        else:
+            st.info("Aucun investissement enregistré pour le moment")
+
+if __name__ == "__main__":
+    main()
