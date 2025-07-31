@@ -73,7 +73,7 @@ def main():
                 if periode_existante:
                     st.error(f"Un revenu pour {periode_actuelle} existe déjà!")
                 else:
-                    montant_investissement = revenu_net * 0.10
+                    montant_investissement = round(revenu_net * 0.10, 2)
                     data["revenus"].append({
                         "mois": mois_revenu,
                         "annee": int(annee_revenu),
