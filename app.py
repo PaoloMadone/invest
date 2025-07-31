@@ -88,8 +88,8 @@ def main():
     # Calcul du budget d'investissement total
     budget_total_brut = sum([r["investissement_disponible"] for r in data["revenus"]])
     budget_total = math.ceil(budget_total_brut)
-    budget_utilise_bourse = sum([b["montant"] for b in data["bourse"]])
-    budget_utilise_crypto = sum([c["montant"] for c in data["crypto"]])
+    budget_utilise_bourse = sum([b["montant"] for b in data["bourse"] if not b.get("hors_budget", False)])
+    budget_utilise_crypto = sum([c["montant"] for c in data["crypto"] if not c.get("hors_budget", False)])
     budget_restant = budget_total - budget_utilise_bourse - budget_utilise_crypto
     
     # Métriques principales
@@ -125,14 +125,29 @@ def main():
                 options=["HIWS"],
                 key="bourse_symbole"
             )
+            
+            hors_budget_bourse = st.checkbox(
+                "💰 Hors budget (conversion/existant)",
+                help="Cochez si c'est un investissement existant ou une conversion qui ne doit pas être déduit du budget",
+                key="bourse_hors_budget"
+            )
+            
+            # Ajuster la limite selon si c'est hors budget ou non
+            if hors_budget_bourse:
+                max_montant_bourse = None
+                help_text_bourse = "Hors budget - aucune limite"
+            else:
+                max_montant_bourse = float(budget_restant) if budget_restant > 0 else 0.0
+                help_text_bourse = f"Budget restant disponible: {budget_restant:.2f}€"
+            
             montant_bourse = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=float(budget_restant) if budget_restant > 0 else 0.0,
+                max_value=max_montant_bourse,
                 value=0.0,
                 step=10.0,
                 key="bourse_montant",
-                help=f"Budget restant disponible: {budget_restant:.2f}€"
+                help=help_text_bourse
             )
             date_bourse = st.date_input("Date d'achat", key="bourse_date")
             prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
@@ -145,7 +160,8 @@ def main():
                         "symbole": symbole_bourse.upper(),
                         "montant": montant_bourse,
                         "prix_unitaire": prix_unitaire_bourse,
-                        "quantite": quantite
+                        "quantite": quantite,
+                        "hors_budget": hors_budget_bourse
                     })
                     save_data(data)
                     st.success("Investissement bourse ajouté!")
@@ -183,14 +199,28 @@ def main():
                 options=["BTC"],
                 key="crypto_symbole"
             )
+            hors_budget_crypto = st.checkbox(
+                "💰 Hors budget (conversion/existant)",
+                help="Cochez si c'est un investissement existant ou une conversion qui ne doit pas être déduit du budget",
+                key="crypto_hors_budget"
+            )
+            
+            # Ajuster la limite selon si c'est hors budget ou non
+            if hors_budget_crypto:
+                max_montant_crypto = None
+                help_text_crypto = "Hors budget - aucune limite"
+            else:
+                max_montant_crypto = float(budget_restant) if budget_restant > 0 else 0.0
+                help_text_crypto = f"Budget restant disponible: {budget_restant:.2f}€"
+            
             montant_crypto = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                max_value=float(budget_restant) if budget_restant > 0 else 0.0,
+                max_value=max_montant_crypto,
                 value=0.0,
                 step=10.0,
                 key="crypto_montant",
-                help=f"Budget restant disponible: {budget_restant:.2f}€"
+                help=help_text_crypto
             )
             date_crypto = st.date_input("Date d'achat", key="crypto_date")
             prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
@@ -203,7 +233,8 @@ def main():
                         "symbole": symbole_crypto.upper(),
                         "montant": montant_crypto,
                         "prix_unitaire": prix_unitaire_crypto,
-                        "quantite": quantite
+                        "quantite": quantite,
+                        "hors_budget": hors_budget_crypto
                     })
                     save_data(data)
                     st.success("Investissement crypto ajouté!")
