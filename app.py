@@ -173,9 +173,9 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
             
-            symbole_bourse = st.selectbox(
+            symbole_bourse = st.text_input(
                 "Symbole",
-                options=["HIWS"],
+                placeholder="Ex: NVDA, AAPL",
                 key="bourse_symbole"
             )
             
@@ -248,9 +248,9 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
             
-            symbole_crypto = st.selectbox(
+            symbole_crypto = st.text_input(
                 "Symbole",
-                options=["BTC"],
+                placeholder="Ex: BTC, ETH",
                 key="crypto_symbole"
             )
             hors_budget_crypto = st.checkbox(
