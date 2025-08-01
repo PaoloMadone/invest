@@ -97,12 +97,16 @@ def main():
     budget_utilise_bourse = sum([b["montant"] for b in data["bourse"] if not b.get("hors_budget", False)])
     budget_utilise_crypto = sum([c["montant"] for c in data["crypto"] if not c.get("hors_budget", False)])
     
+    # Total réellement investi (incluant hors budget)
+    total_investi_bourse = sum([b["montant"] for b in data["bourse"]])
+    total_investi_crypto = sum([c["montant"] for c in data["crypto"]])
+    
     budget_restant_bourse = budget_bourse - budget_utilise_bourse
     budget_restant_crypto = budget_crypto - budget_utilise_crypto
     budget_restant = budget_restant_bourse + budget_restant_crypto
     
     # Métriques globales
-    total_investi = budget_utilise_bourse + budget_utilise_crypto
+    total_investi_reel = total_investi_bourse + total_investi_crypto
     total_restant = budget_restant_bourse + budget_restant_crypto
     
     col1, col2, col3 = st.columns(3)
@@ -111,7 +115,7 @@ def main():
         st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
         
     with col2:
-        st.metric("Total Investi", f"{total_investi:,.0f}€".replace(",", " "))
+        st.metric("Total Investi", f"{total_investi_reel:,.0f}€".replace(",", " "))
         
     with col3:
         st.metric("Total Restant", f"{total_restant:,.0f}€".replace(",", " "))
@@ -129,7 +133,7 @@ def main():
         with col_m1:
             st.metric("Budget Bourse", f"{budget_bourse:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Bourse", f"{budget_utilise_bourse:,.0f}€".replace(",", " "))
+            st.metric("Investi Bourse", f"{total_investi_bourse:,.0f}€".replace(",", " "))
         with col_m3:
             st.metric("Restant Bourse", f"{budget_restant_bourse:,.0f}€".replace(",", " "))
         
@@ -196,7 +200,7 @@ def main():
         with col_m1:
             st.metric("Budget Crypto", f"{budget_crypto:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Crypto", f"{budget_utilise_crypto:,.0f}€".replace(",", " "))
+            st.metric("Investi Crypto", f"{total_investi_crypto:,.0f}€".replace(",", " "))
         with col_m3:
             st.metric("Restant Crypto", f"{budget_restant_crypto:,.0f}€".replace(",", " "))
         
