@@ -119,7 +119,7 @@ def main():
     st.markdown("---")
     
     # Tabs pour Bourse et Crypto
-    tab_bourse, tab_crypto, tab_revenus, tab_overview = st.tabs(["Bourse", "Crypto", "Revenus", "Vue d'ensemble"])
+    tab_revenus, tab_bourse, tab_crypto, tab_overview = st.tabs(["Revenus", "Bourse", "Crypto", "Vue d'ensemble"])
     
     with tab_bourse:
         st.header("Investissements Bourse")
@@ -274,9 +274,9 @@ def main():
             st.subheader("Récapitulatif des revenus")
             
             # Affichage du tableau
-            df_display = df_revenus[["mois_nom", "annee", "montant"]].copy()
+            df_display = df_revenus[["annee", "mois_nom", "montant"]].copy()
             df_display["budget_total"] = (df_revenus["investissement_disponible_bourse"] + df_revenus["investissement_disponible_crypto"]).round().astype(int)
-            df_display.columns = ["Mois", "Année", "Revenu Net (€)", "Budget Investissement (€)"]
+            df_display.columns = ["Année", "Mois", "Revenu Net (€)", "Budget Investissement (€)"]
             st.dataframe(df_display, use_container_width=True)
             
             # Métriques de résumé
