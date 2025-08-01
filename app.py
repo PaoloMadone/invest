@@ -186,6 +186,8 @@ def main():
             if data["bourse"]:
                 df_bourse = pd.DataFrame(data["bourse"])
                 df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
+                df_bourse["montant"] = df_bourse["montant"].apply(lambda x: f"{x:,.0f}€".replace(",", " "))
+                df_bourse["prix_unitaire"] = df_bourse["prix_unitaire"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
                 
                 st.subheader("Portfolio Bourse")
                 st.dataframe(df_bourse, use_container_width=True)
@@ -252,6 +254,8 @@ def main():
             if data["crypto"]:
                 df_crypto = pd.DataFrame(data["crypto"])
                 df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
+                df_crypto["montant"] = df_crypto["montant"].apply(lambda x: f"{x:,.0f}€".replace(",", " "))
+                df_crypto["prix_unitaire"] = df_crypto["prix_unitaire"].apply(lambda x: f"{x:,.0f}€".replace(",", " "))
                 
                 st.subheader("Portfolio Crypto")
                 st.dataframe(df_crypto, use_container_width=True)
