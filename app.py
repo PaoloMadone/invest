@@ -94,8 +94,8 @@ def main():
                 if periode_existante:
                     st.error(f"Un revenu pour {periode_actuelle} existe déjà!")
                 else:
-                    montant_investissement_bourse = round(revenu_net * 0.10, 2)
-                    montant_investissement_crypto = round(revenu_net * 0.10, 2)
+                    montant_investissement_bourse = 50.0
+                    montant_investissement_crypto = 50.0
                     # Ajouter à Supabase
                     try:
                         supabase.table('revenus').insert({
