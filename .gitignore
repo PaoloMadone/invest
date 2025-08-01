@@ -1,2 +1,4 @@
 .idea/
 investments_data.json
+.venv/
+.env

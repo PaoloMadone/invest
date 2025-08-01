@@ -6,6 +6,11 @@ from datetime import datetime, date
 import json
 import os
 import math
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
 
 st.set_page_config(
     page_title="Tracker d'Investissements",
@@ -13,15 +18,31 @@ st.set_page_config(
     layout="wide"
 )
 
+# Configuration Supabase
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 DATA_FILE = "investments_data.json"
 
 def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
-    return {"revenus": [], "bourse": [], "crypto": []}
+    try:
+        # Charger depuis Supabase
+        revenus = supabase.table('revenus').select('*').execute().data
+        bourse = supabase.table('bourse').select('*').execute().data
+        crypto = supabase.table('crypto').select('*').execute().data
+        
+        return {
+            "revenus": revenus,
+            "bourse": bourse,
+            "crypto": crypto
+        }
+    except Exception as e:
+        st.error(f"Erreur lors du chargement des données: {e}")
+        return {"revenus": [], "bourse": [], "crypto": []}
 
 def save_data(data):
+    # Sauvegarder aussi en local pour backup (optionnel)
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -75,15 +96,23 @@ def main():
                 else:
                     montant_investissement_bourse = round(revenu_net * 0.10, 2)
                     montant_investissement_crypto = round(revenu_net * 0.10, 2)
-                    data["revenus"].append({
-                        "mois": mois_revenu,
-                        "annee": int(annee_revenu),
-                        "periode": periode_actuelle,
-                        "montant": revenu_net,
-                        "investissement_disponible_bourse": montant_investissement_bourse,
-                        "investissement_disponible_crypto": montant_investissement_crypto
-                    })
-                    save_data(data)
+                    # Ajouter à Supabase
+                    try:
+                        supabase.table('revenus').insert({
+                            "mois": mois_revenu,
+                            "annee": int(annee_revenu),
+                            "periode": periode_actuelle,
+                            "montant": revenu_net,
+                            "investissement_disponible_bourse": montant_investissement_bourse,
+                            "investissement_disponible_crypto": montant_investissement_crypto
+                        }).execute()
+                        
+                        # Recharger les données
+                        data = load_data()
+                        save_data(data)
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'ajout du revenu: {e}")
+                        return
                     st.success(f"Revenu enregistré! {montant_investissement_bourse:,.2f}€ pour bourse, {montant_investissement_crypto:,.2f}€ pour crypto".replace(",", " "))
                     st.rerun()
     
@@ -170,17 +199,23 @@ def main():
             if st.button("Ajouter Investissement Bourse"):
                 if symbole_bourse and montant_bourse > 0 and prix_unitaire_bourse > 0:
                     quantite = montant_bourse / prix_unitaire_bourse
-                    data["bourse"].append({
-                        "date": date_bourse.isoformat(),
-                        "symbole": symbole_bourse.upper(),
-                        "montant": montant_bourse,
-                        "prix_unitaire": prix_unitaire_bourse,
-                        "quantite": quantite,
-                        "hors_budget": hors_budget_bourse
-                    })
-                    save_data(data)
-                    st.success("Investissement bourse ajouté!")
-                    st.rerun()
+                    try:
+                        supabase.table('bourse').insert({
+                            "date": date_bourse.isoformat(),
+                            "symbole": symbole_bourse.upper(),
+                            "montant": montant_bourse,
+                            "prix_unitaire": prix_unitaire_bourse,
+                            "quantite": quantite,
+                            "hors_budget": hors_budget_bourse
+                        }).execute()
+                        
+                        # Recharger les données
+                        data = load_data()
+                        save_data(data)
+                        st.success("Investissement bourse ajouté!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'ajout de l'investissement bourse: {e}")
         
         with col2:
             if data["bourse"]:
@@ -238,17 +273,23 @@ def main():
             if st.button("Ajouter Investissement Crypto"):
                 if symbole_crypto and montant_crypto > 0 and prix_unitaire_crypto > 0:
                     quantite = montant_crypto / prix_unitaire_crypto
-                    data["crypto"].append({
-                        "date": date_crypto.isoformat(),
-                        "symbole": symbole_crypto.upper(),
-                        "montant": montant_crypto,
-                        "prix_unitaire": prix_unitaire_crypto,
-                        "quantite": quantite,
-                        "hors_budget": hors_budget_crypto
-                    })
-                    save_data(data)
-                    st.success("Investissement crypto ajouté!")
-                    st.rerun()
+                    try:
+                        supabase.table('crypto').insert({
+                            "date": date_crypto.isoformat(),
+                            "symbole": symbole_crypto.upper(),
+                            "montant": montant_crypto,
+                            "prix_unitaire": prix_unitaire_crypto,
+                            "quantite": quantite,
+                            "hors_budget": hors_budget_crypto
+                        }).execute()
+                        
+                        # Recharger les données
+                        data = load_data()
+                        save_data(data)
+                        st.success("Investissement crypto ajouté!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'ajout de l'investissement crypto: {e}")
         
         with col2:
             if data["crypto"]:
