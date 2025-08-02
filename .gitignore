@@ -1,4 +1,35 @@
+# Vos règles existantes
 .idea/
 investments_data.json
 .venv/
 .env
+
+# Ajouts pour Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments (complémentaire)
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs (complémentaire)
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Autres environnements
+.env.local
