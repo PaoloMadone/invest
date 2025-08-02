@@ -190,6 +190,10 @@ class TestBourseOperations(TestInvestmentApp):
         erreurs = valider_donnees_investissement(0, 25.0, "HIWS")
         assert "Le montant doit être supérieur à 0" in erreurs
         
+        # Petit montant (devrait être valide mais va échouer avec notre bug)
+        erreurs = valider_donnees_investissement(50.0, 25.0, "HIWS")
+        assert len(erreurs) == 0  # Devrait être valide mais va échouer
+        
         # Prix invalide
         erreurs = valider_donnees_investissement(150.0, 0, "HIWS")
         assert "Le prix unitaire doit être supérieur à 0" in erreurs
