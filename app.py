@@ -296,7 +296,7 @@ def main():
                 df_crypto = pd.DataFrame(data["crypto"])
                 df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.strftime("%d-%m-%Y")
                 df_crypto["montant"] = df_crypto["montant"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
-                df_crypto["prix_unitaire"] = df_crypto["prix_unitaire"].apply(lambda x: f"{x:,.0f}€".replace(",", " "))
+                df_crypto["prix_unitaire"] = df_crypto["prix_unitaire"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
                 
                 st.subheader("Portfolio Crypto")
                 st.dataframe(df_crypto, use_container_width=True)
