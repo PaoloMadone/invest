@@ -33,11 +33,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     # 4. Lancer les tests
     - name: Exécution des tests
       run: |
         python run_tests.py
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     # 5. Tests spécifiques par catégorie (optionnel, pour debug)
     - name: Tests par catégorie
@@ -50,6 +56,9 @@ jobs:
         python run_tests.py crypto
         echo "=== Tests Budget ==="
         python run_tests.py budget
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
   # Job pour vérifier la qualité du code
   quality:

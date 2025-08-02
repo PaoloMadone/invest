@@ -2,8 +2,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-# Import des fonctions à tester
-from app import save_data
+# Mock Supabase avant d'importer app
+with patch("app.create_client") as mock_create:
+    mock_create.return_value = Mock()
+    from app import save_data
 from business_logic import (
     calculer_budget_disponible,
     calculer_budget_restant,

@@ -25,26 +25,44 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     - name: Tests critiques - Revenus
       run: |
         python run_tests.py revenus
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
         
     - name: Tests critiques - Bourse  
       run: |
         python run_tests.py bourse
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
         
     - name: Tests critiques - Crypto
       run: |
         python run_tests.py crypto
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     - name: Tests critiques - Budget
       run: |
         python run_tests.py budget
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     - name: Suite complète
       run: |
         python run_tests.py
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
   # Vérifications de régression
   regression-check:
@@ -66,16 +84,25 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
 
     - name: Tests sur la branche cible (main)
       run: |
         git checkout main
         python run_tests.py > tests_main.log 2>&1 || echo "Tests main executés"
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
         
     - name: Tests sur la branche PR
       run: |
         git checkout ${{ github.head_ref }}
         python run_tests.py > tests_pr.log 2>&1 || echo "Tests PR executés"
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
         
     - name: Comparaison des résultats
       run: |
