@@ -220,7 +220,7 @@ def main():
         with col2:
             if data["bourse"]:
                 df_bourse = pd.DataFrame(data["bourse"])
-                df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
+                df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.strftime("%d-%m-%Y")
                 df_bourse["montant"] = df_bourse["montant"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
                 df_bourse["prix_unitaire"] = df_bourse["prix_unitaire"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
                 
@@ -294,7 +294,7 @@ def main():
         with col2:
             if data["crypto"]:
                 df_crypto = pd.DataFrame(data["crypto"])
-                df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
+                df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.strftime("%d-%m-%Y")
                 df_crypto["montant"] = df_crypto["montant"].apply(lambda x: f"{x:,.2f}€".replace(",", " "))
                 df_crypto["prix_unitaire"] = df_crypto["prix_unitaire"].apply(lambda x: f"{x:,.0f}€".replace(",", " "))
                 
