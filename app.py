@@ -188,16 +188,16 @@ def main():
             montant_bourse = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                value=0.0,
+                value=None,
                 step=10.0,
                 key="bourse_montant",
                 help="Saisissez le montant de votre investissement"
             )
             date_bourse = st.date_input("Date d'achat", key="bourse_date")
-            prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="bourse_prix")
+            prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix")
             
             if st.button("Ajouter Investissement Bourse"):
-                if symbole_bourse and montant_bourse > 0 and prix_unitaire_bourse > 0:
+                if symbole_bourse and (montant_bourse or 0) > 0 and (prix_unitaire_bourse or 0) > 0:
                     quantite = montant_bourse / prix_unitaire_bourse
                     try:
                         supabase.table('bourse').insert({
@@ -262,16 +262,16 @@ def main():
             montant_crypto = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
-                value=0.0,
+                value=None,
                 step=10.0,
                 key="crypto_montant",
                 help="Saisissez le montant de votre investissement"
             )
             date_crypto = st.date_input("Date d'achat", key="crypto_date")
-            prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=0.0, step=0.01, key="crypto_prix")
+            prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="crypto_prix")
             
             if st.button("Ajouter Investissement Crypto"):
-                if symbole_crypto and montant_crypto > 0 and prix_unitaire_crypto > 0:
+                if symbole_crypto and (montant_crypto or 0) > 0 and (prix_unitaire_crypto or 0) > 0:
                     quantite = montant_crypto / prix_unitaire_crypto
                     try:
                         supabase.table('crypto').insert({
