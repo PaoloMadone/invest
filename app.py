@@ -193,7 +193,7 @@ def main():
                 key="bourse_montant",
                 help="Saisissez le montant de votre investissement"
             )
-            date_bourse = st.date_input("Date d'achat", key="bourse_date")
+            date_bourse = st.date_input("Date d'achat", key="bourse_date", format="DD/MM/YYYY")
             prix_unitaire_bourse = st.number_input("Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix")
             
             if st.button("Ajouter Investissement Bourse"):
@@ -267,7 +267,7 @@ def main():
                 key="crypto_montant",
                 help="Saisissez le montant de votre investissement"
             )
-            date_crypto = st.date_input("Date d'achat", key="crypto_date")
+            date_crypto = st.date_input("Date d'achat", key="crypto_date", format="DD/MM/YYYY")
             prix_unitaire_crypto = st.number_input("Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="crypto_prix")
             
             if st.button("Ajouter Investissement Crypto"):
