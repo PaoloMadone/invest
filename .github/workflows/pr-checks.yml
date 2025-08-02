@@ -145,34 +145,5 @@ jobs:
           echo "✅ Aucune modification dans test_app.py"
         fi
 
-  # Commentaire automatique sur la PR
-  pr-comment:
-    name: Commentaire automatique
-    runs-on: ubuntu-latest
-    needs: [mandatory-tests, regression-check]
-    if: always()
-    
-    steps:
-    - name: Commentaire de succès
-      if: needs.mandatory-tests.result == 'success' && needs.regression-check.result == 'success'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '✅ **Tous les tests passent !** Cette PR peut être mergée en sécurité.\n\n📊 **Résultats:**\n- Tests revenus: ✅\n- Tests bourse: ✅\n- Tests crypto: ✅\n- Tests budget: ✅\n- Pas de régression détectée: ✅'
-          })
-
-    - name: Commentaire d'échec
-      if: needs.mandatory-tests.result == 'failure' || needs.regression-check.result == 'failure'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '❌ **Échec des tests !** Cette PR ne peut pas être mergée.\n\n🔍 **Actions requises:**\n1. Vérifier les logs des tests qui échouent\n2. Corriger les erreurs\n3. Re-pusher pour relancer les tests\n\n💡 **Aide:** Lancez `python run_tests.py` en local pour diagnostiquer.'
-          })
+  # Les résultats sont visibles dans les logs GitHub Actions
+  # Pas de commentaire automatique pour éviter les problèmes de permissions
