@@ -353,31 +353,67 @@ def main():
         st.header("Vue d'ensemble")
         
         if data["bourse"] or data["crypto"]:
-            # Graphique évolution temporelle
-            all_investments = []
+            # Regroupement des investissements par symbole
+            investments_by_symbol = {}
             
+            # Traitement des investissements bourse
             for inv in data["bourse"]:
-                all_investments.append({
-                    "date": inv["date"],
-                    "montant": inv["montant"],
-                    "type": "Bourse",
-                    "symbole": inv["symbole"]
-                })
+                symbole = inv["symbole"]
+                if symbole not in investments_by_symbol:
+                    investments_by_symbol[symbole] = {
+                        "montant_total": 0,
+                        "type": "Bourse"
+                    }
+                investments_by_symbol[symbole]["montant_total"] += inv["montant"]
             
+            # Traitement des investissements crypto
             for inv in data["crypto"]:
-                all_investments.append({
-                    "date": inv["date"],
-                    "montant": inv["montant"],
-                    "type": "Crypto",
-                    "symbole": inv["symbole"]
-                })
+                symbole = inv["symbole"]
+                if symbole not in investments_by_symbol:
+                    investments_by_symbol[symbole] = {
+                        "montant_total": 0,
+                        "type": "Crypto"
+                    }
+                investments_by_symbol[symbole]["montant_total"] += inv["montant"]
             
-            if all_investments:
-                df_all = pd.DataFrame(all_investments)
-                df_all["date"] = pd.to_datetime(df_all["date"])
-                df_all = df_all.sort_values("date")
-                df_all["montant_cumule"] = df_all["montant"].cumsum()
+            if investments_by_symbol:
+                # Préparation des données pour le pie chart
+                symboles = list(investments_by_symbol.keys())
+                montants = [investments_by_symbol[s]["montant_total"] for s in symboles]
+                types = [investments_by_symbol[s]["type"] for s in symboles]
                 
+                # Couleurs différentes pour bourse et crypto
+                colors = ['#1f77b4' if t == 'Bourse' else '#ff7f0e' for t in types]
+                
+                # Création du pie chart avec Plotly
+                fig = go.Figure(data=[go.Pie(
+                    labels=symboles,
+                    values=montants,
+                    hole=0.3,
+                    marker=dict(colors=colors),
+                    textinfo='label+percent',
+                    textposition='auto',
+                    hovertemplate='<b>%{label}</b><br>' +
+                                'Montant: %{value:,.2f}€<br>' +
+                                'Pourcentage: %{percent}<br>' +
+                                '<extra></extra>'
+                )])
+                
+                fig.update_layout(
+                    title="Répartition des investissements par titre",
+                    showlegend=True,
+                    font=dict(size=14),
+                    height=500
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Légende pour les couleurs
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("🔵 **Bourse**")
+                with col2:
+                    st.markdown("🟠 **Crypto**")
                 
         else:
             st.info("Aucun investissement enregistré pour le moment")
