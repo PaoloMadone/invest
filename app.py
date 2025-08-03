@@ -220,13 +220,26 @@ def main():
         st.header("Investissements Bourse")
 
         # Métriques spécifiques bourse
-        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
         with col_m1:
             st.metric("Budget Bourse", f"{budget_bourse:,}€".replace(",", " "))
         with col_m2:
             st.metric("Investi Bourse", f"{total_investi_bourse:,.0f}€".replace(",", " "))
         with col_m3:
             st.metric("Restant Bourse", f"{budget_restant_bourse:,.0f}€".replace(",", " "))
+        with col_m4:
+            if portfolio_summary and portfolio_summary["bourse"]["valeur_actuelle"] > 0:
+                valeur_actuelle_bourse = portfolio_summary["bourse"]["valeur_actuelle"]
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.0f}€".replace(",", " "))
+            else:
+                st.metric("Valeur Actuelle", f"{total_investi_bourse:,.0f}€".replace(",", " "))
+        with col_m5:
+            if portfolio_summary and portfolio_summary["bourse"]["pnl_montant"] is not None:
+                pnl_bourse = portfolio_summary["bourse"]["pnl_montant"]
+                pnl_pct_bourse = portfolio_summary["bourse"]["pnl_pourcentage"]
+                st.metric("P&L Total", f"{pnl_bourse:+,.0f}€".replace(",", " "), delta=f"{pnl_pct_bourse:+.1f}%")
+            else:
+                st.metric("P&L Total", "0€", delta="0.0%")
 
         st.markdown("---")
 
@@ -431,24 +444,6 @@ def main():
                         st.dataframe(df_display, use_container_width=True)
                         st.warning("Impossible de récupérer les prix actuels")
 
-                    # Métriques de performance globale bourse
-                    if "valeur_actuelle" in df_bourse.columns:
-                        total_investi = df_bourse["montant"].sum()
-                        total_actuel = df_bourse["valeur_actuelle"].sum()
-                        total_pnl = total_actuel - total_investi
-                        total_pnl_pct = (
-                            (total_pnl / total_investi * 100) if total_investi > 0 else 0
-                        )
-
-                        col_perf1, col_perf2 = st.columns(2)
-                        with col_perf1:
-                            st.metric("Valeur Actuelle", f"{total_actuel:,.0f}€".replace(",", " "))
-                        with col_perf2:
-                            st.metric(
-                                "P&L Total",
-                                f"{total_pnl:+,.0f}€".replace(",", " "),
-                                delta=f"{total_pnl_pct:+.1f}%",
-                            )
             else:
                 st.info("Aucun investissement bourse enregistré")
 
@@ -456,13 +451,26 @@ def main():
         st.header("Investissements Crypto")
 
         # Métriques spécifiques crypto
-        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
         with col_m1:
             st.metric("Budget Crypto", f"{budget_crypto:,}€".replace(",", " "))
         with col_m2:
             st.metric("Investi Crypto", f"{total_investi_crypto:,.0f}€".replace(",", " "))
         with col_m3:
             st.metric("Restant Crypto", f"{budget_restant_crypto:,.0f}€".replace(",", " "))
+        with col_m4:
+            if portfolio_summary and portfolio_summary["crypto"]["valeur_actuelle"] > 0:
+                valeur_actuelle_crypto = portfolio_summary["crypto"]["valeur_actuelle"]
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.0f}€".replace(",", " "))
+            else:
+                st.metric("Valeur Actuelle", f"{total_investi_crypto:,.0f}€".replace(",", " "))
+        with col_m5:
+            if portfolio_summary and portfolio_summary["crypto"]["pnl_montant"] is not None:
+                pnl_crypto = portfolio_summary["crypto"]["pnl_montant"]
+                pnl_pct_crypto = portfolio_summary["crypto"]["pnl_pourcentage"]
+                st.metric("P&L Total", f"{pnl_crypto:+,.0f}€".replace(",", " "), delta=f"{pnl_pct_crypto:+.1f}%")
+            else:
+                st.metric("P&L Total", "0€", delta="0.0%")
 
         st.markdown("---")
 
@@ -600,29 +608,6 @@ def main():
                         st.dataframe(df_display, use_container_width=True)
                         st.warning("Impossible de récupérer les prix actuels")
 
-                    # Métriques de performance globale crypto
-                    if "valeur_actuelle" in df_crypto.columns:
-                        total_investi = df_crypto["montant"].sum()
-                        total_actuel = df_crypto["valeur_actuelle"].sum()
-                        total_pnl = total_actuel - total_investi
-                        total_pnl_pct = (
-                            (total_pnl / total_investi * 100) if total_investi > 0 else 0
-                        )
-
-                        col_perf1, col_perf2, col_perf3 = st.columns(3)
-                        with col_perf1:
-                            st.metric("Valeur Actuelle", f"{total_actuel:,.0f}€".replace(",", " "))
-                        with col_perf2:
-                            st.metric(
-                                "P&L Total",
-                                f"{total_pnl:+,.0f}€".replace(",", " "),
-                                delta=f"{total_pnl_pct:+.1f}%",
-                            )
-                        with col_perf3:
-                            if total_pnl >= 0:
-                                st.success(f"🚀 +{total_pnl_pct:.1f}%")
-                            else:
-                                st.error(f"💥 {total_pnl_pct:.1f}%")
             else:
                 st.info("Aucun investissement crypto enregistré")
 
