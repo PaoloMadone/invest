@@ -138,31 +138,7 @@ class PriceService:
             return self.cache[f"stock_{symbol}"]["price"]
 
         try:
-            # Mapping manuel pour les cas spéciaux connus
-            manual_mapping = {
-                "HIWS": "HIWS.PA",  # Euronext Paris
-                "NVIDIA": "NVDA",  # NVIDIA sur NASDAQ
-                "MICROSOFT": "MSFT",
-                "APPLE": "AAPL",
-                "TESLA": "TSLA",
-                # Ajouter d'autres mappings manuels si nécessaire
-            }
-
-            # 1. Essayer d'abord le mapping manuel
-            if symbol.upper() in manual_mapping:
-                mapped_symbol = manual_mapping[symbol.upper()]
-                ticker = yf.Ticker(mapped_symbol)
-                hist = ticker.history(period="2d")
-
-                if not hist.empty:
-                    price = float(hist["Close"].iloc[-1])
-                    print(f"✅ Mapping manuel: {symbol} -> {mapped_symbol} (prix: {price:.2f})")
-
-                    # Mettre en cache
-                    self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                    return price
-
-            # 2. Essayer le symbole tel quel puis les variantes
+            # Essayer le symbole tel quel puis les variantes
             result = self._try_multiple_symbols(symbol.upper())
 
             if result:

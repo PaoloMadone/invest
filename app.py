@@ -262,6 +262,67 @@ def main():
                 "Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix"
             )
 
+            # Bouton de validation du prix (pour tester la recherche)
+            if st.button("🔍 Vérifier le symbole", key="check_symbol"):
+                if symbole_bourse:
+                    with st.spinner(f"Recherche de {symbole_bourse}..."):
+                        price, choices = st.session_state.price_service.get_stock_price_with_choice(symbole_bourse)
+                        
+                        if price is not None:
+                            st.success(f"✅ Prix trouvé: {price:.2f}€")
+                        elif choices:
+                            st.session_state.symbol_choices = choices
+                            st.session_state.pending_symbol = symbole_bourse
+                            st.info(f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. Veuillez choisir ci-dessous :")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Aucun symbole trouvé pour '{symbole_bourse}'")
+
+            # Interface de choix si plusieurs options trouvées
+            if hasattr(st.session_state, 'symbol_choices') and st.session_state.symbol_choices:
+                st.subheader(f"Choisir le symbole pour '{st.session_state.pending_symbol}':")
+                
+                choices = st.session_state.symbol_choices
+                choice_labels = []
+                
+                for i, (variant, price, market, company) in enumerate(choices):
+                    label = f"{variant} ({market}) - {company} - {price:.2f}€"
+                    choice_labels.append(label)
+                
+                selected_choice = st.radio(
+                    "Symboles trouvés:",
+                    options=range(len(choices)),
+                    format_func=lambda x: choice_labels[x],
+                    key="symbol_choice_radio"
+                )
+                
+                col_choose, col_cancel = st.columns(2)
+                
+                with col_choose:
+                    if st.button("✅ Utiliser ce symbole", key="confirm_choice"):
+                        chosen_variant, chosen_price, chosen_market, chosen_company = choices[selected_choice]
+                        
+                        # Sauvegarder le choix
+                        final_price = st.session_state.price_service.save_user_choice(
+                            st.session_state.pending_symbol, 
+                            chosen_variant, 
+                            chosen_company
+                        )
+                        
+                        if final_price:
+                            st.success(f"💾 Choix sauvegardé ! {st.session_state.pending_symbol} → {chosen_variant} ({final_price:.2f}€)")
+                        
+                        # Nettoyer les variables de session
+                        del st.session_state.symbol_choices  
+                        del st.session_state.pending_symbol
+                        st.rerun()
+                
+                with col_cancel:
+                    if st.button("❌ Annuler", key="cancel_choice"):
+                        del st.session_state.symbol_choices
+                        del st.session_state.pending_symbol
+                        st.rerun()
+
             if st.button("Ajouter Investissement Bourse"):
                 if symbole_bourse and (montant_bourse or 0) > 0 and (prix_unitaire_bourse or 0) > 0:
                     quantite = montant_bourse / prix_unitaire_bourse
