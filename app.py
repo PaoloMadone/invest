@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from supabase import Client, create_client
+from price_service import PriceService
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -45,6 +46,10 @@ def main():
     st.markdown("---")
 
     data = load_data()
+    
+    # Initialiser le service de prix
+    if 'price_service' not in st.session_state:
+        st.session_state.price_service = PriceService()
 
     # Sidebar pour saisie des revenus
     with st.sidebar:
@@ -142,11 +147,34 @@ def main():
     budget_restant_bourse = budget_bourse - budget_utilise_bourse
     budget_restant_crypto = budget_crypto - budget_utilise_crypto
 
-    # Métriques globales
+    # Métriques globales avec performances en temps réel
     total_investi_reel = total_investi_bourse + total_investi_crypto
     total_restant = budget_restant_bourse + budget_restant_crypto
 
-    col1, col2, col3 = st.columns(3)
+    # Bouton pour actualiser les prix
+    col_refresh, col_empty = st.columns([1, 5])
+    with col_refresh:
+        if st.button("🔄 Actualiser les prix"):
+            st.session_state.price_service.clear_cache()
+            st.rerun()
+
+    # Calculer les performances globales
+    portfolio_summary = None
+    if data["bourse"] or data["crypto"]:
+        with st.spinner("Calcul des performances globales..."):
+            crypto_with_perf = st.session_state.price_service.calculate_investment_performance(
+                data["crypto"], "crypto"
+            ) if data["crypto"] else []
+            
+            bourse_with_perf = st.session_state.price_service.calculate_investment_performance(
+                data["bourse"], "bourse"
+            ) if data["bourse"] else []
+            
+            portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+                crypto_with_perf, bourse_with_perf
+            )
+
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
@@ -155,7 +183,24 @@ def main():
         st.metric("Total Investi", f"{total_investi_reel:,.0f}€".replace(",", " "))
 
     with col3:
-        st.metric("Total Restant", f"{total_restant:,.0f}€".replace(",", " "))
+        if portfolio_summary:
+            valeur_actuelle = portfolio_summary['total']['valeur_actuelle']
+            st.metric("Valeur Actuelle", f"{valeur_actuelle:,.0f}€".replace(",", " "))
+        else:
+            st.metric("Valeur Actuelle", f"{total_investi_reel:,.0f}€".replace(",", " "))
+
+    with col4:
+        if portfolio_summary:
+            pnl_total = portfolio_summary['total']['pnl_montant']
+            pnl_pct = portfolio_summary['total']['pnl_pourcentage']
+            delta_color = "normal" if pnl_total >= 0 else "inverse"
+            st.metric(
+                "P&L Total", 
+                f"{pnl_total:+,.0f}€".replace(",", " "),
+                delta=f"{pnl_pct:+.1f}%"
+            )
+        else:
+            st.metric("Total Restant", f"{total_restant:,.0f}€".replace(",", " "))
 
     st.markdown("---")
 
@@ -230,17 +275,84 @@ def main():
 
         with col2:
             if data["bourse"]:
-                df_bourse = pd.DataFrame(data["bourse"])
-                df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
-                df_bourse["montant"] = df_bourse["montant"].apply(
-                    lambda x: f"{x:,.0f}€".replace(",", " ")
-                )
-                df_bourse["prix_unitaire"] = df_bourse["prix_unitaire"].apply(
-                    lambda x: f"{x:,.2f}€".replace(",", " ")
-                )
-
                 st.subheader("Portfolio Bourse")
-                st.dataframe(df_bourse, use_container_width=True)
+                
+                # Calculer les performances avec prix actuels
+                with st.spinner("Récupération des prix actuels..."):
+                    bourse_with_perf = st.session_state.price_service.calculate_investment_performance(
+                        data["bourse"], "bourse"
+                    )
+                
+                if bourse_with_perf:
+                    df_bourse = pd.DataFrame(bourse_with_perf)
+                    df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
+                    
+                    # Préparer les colonnes d'affichage
+                    df_display = df_bourse[["date", "symbole", "quantite", "prix_unitaire", "montant"]].copy()
+                    
+                    # Ajouter les colonnes de performance si disponibles
+                    if "prix_actuel" in df_bourse.columns:
+                        df_display["prix_actuel"] = df_bourse["prix_actuel"].apply(
+                            lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
+                        )
+                        df_display["valeur_actuelle"] = df_bourse["valeur_actuelle"].apply(
+                            lambda x: f"{x:,.0f}€".replace(",", " ")
+                        )
+                        df_display["pnl_montant"] = df_bourse["pnl_montant"].apply(
+                            lambda x: f"{x:+,.0f}€".replace(",", " ")
+                        )
+                        df_display["pnl_pourcentage"] = df_bourse["pnl_pourcentage"].apply(
+                            lambda x: f"{x:+.1f}%"
+                        )
+                        
+                        # Appliquer un style conditionnel pour les P&L
+                        def color_pnl(val):
+                            if "+" in str(val):
+                                return "color: green"
+                            elif "-" in str(val):
+                                return "color: red"
+                            return ""
+                        
+                        styled_df = df_display.style.applymap(color_pnl, subset=["pnl_montant", "pnl_pourcentage"])
+                    
+                    # Formatage final
+                    df_display["montant"] = df_display["montant"].apply(
+                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                    )
+                    df_display["prix_unitaire"] = df_display["prix_unitaire"].apply(
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
+                    )
+                    df_display["quantite"] = df_display["quantite"].apply(
+                        lambda x: f"{x:.4f}"
+                    )
+                    
+                    # Colonnes finales
+                    if "prix_actuel" in df_display.columns:
+                        df_display.columns = ["Date", "Symbole", "Quantité", "Prix Achat", "Investi", "Prix Actuel", "Valeur Actuelle", "P&L €", "P&L %"]
+                        st.dataframe(styled_df, use_container_width=True)
+                    else:
+                        df_display.columns = ["Date", "Symbole", "Quantité", "Prix Achat", "Investi"]
+                        st.dataframe(df_display, use_container_width=True)
+                        st.warning("Impossible de récupérer les prix actuels")
+                        
+                    # Métriques de performance globale bourse
+                    if "valeur_actuelle" in df_bourse.columns:
+                        total_investi = df_bourse["montant"].sum()
+                        total_actuel = df_bourse["valeur_actuelle"].sum()
+                        total_pnl = total_actuel - total_investi
+                        total_pnl_pct = (total_pnl / total_investi * 100) if total_investi > 0 else 0
+                        
+                        col_perf1, col_perf2, col_perf3 = st.columns(3)
+                        with col_perf1:
+                            st.metric("Valeur Actuelle", f"{total_actuel:,.0f}€".replace(",", " "))
+                        with col_perf2:
+                            st.metric("P&L Total", f"{total_pnl:+,.0f}€".replace(",", " "), 
+                                     delta=f"{total_pnl_pct:+.1f}%")
+                        with col_perf3:
+                            if total_pnl >= 0:
+                                st.success(f"📈 +{total_pnl_pct:.1f}%")
+                            else:
+                                st.error(f"📉 {total_pnl_pct:.1f}%")
             else:
                 st.info("Aucun investissement bourse enregistré")
 
@@ -309,17 +421,84 @@ def main():
 
         with col2:
             if data["crypto"]:
-                df_crypto = pd.DataFrame(data["crypto"])
-                df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
-                df_crypto["montant"] = df_crypto["montant"].apply(
-                    lambda x: f"{x:,.0f}€".replace(",", " ")
-                )
-                df_crypto["prix_unitaire"] = df_crypto["prix_unitaire"].apply(
-                    lambda x: f"{x:,.0f}€".replace(",", " ")
-                )
-
                 st.subheader("Portfolio Crypto")
-                st.dataframe(df_crypto, use_container_width=True)
+                
+                # Calculer les performances avec prix actuels
+                with st.spinner("Récupération des prix crypto actuels..."):
+                    crypto_with_perf = st.session_state.price_service.calculate_investment_performance(
+                        data["crypto"], "crypto"
+                    )
+                
+                if crypto_with_perf:
+                    df_crypto = pd.DataFrame(crypto_with_perf)
+                    df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
+                    
+                    # Préparer les colonnes d'affichage
+                    df_display = df_crypto[["date", "symbole", "quantite", "prix_unitaire", "montant"]].copy()
+                    
+                    # Ajouter les colonnes de performance si disponibles
+                    if "prix_actuel" in df_crypto.columns:
+                        df_display["prix_actuel"] = df_crypto["prix_actuel"].apply(
+                            lambda x: f"{x:,.0f}€".replace(",", " ") if x is not None else "N/A"
+                        )
+                        df_display["valeur_actuelle"] = df_crypto["valeur_actuelle"].apply(
+                            lambda x: f"{x:,.0f}€".replace(",", " ")
+                        )
+                        df_display["pnl_montant"] = df_crypto["pnl_montant"].apply(
+                            lambda x: f"{x:+,.0f}€".replace(",", " ")
+                        )
+                        df_display["pnl_pourcentage"] = df_crypto["pnl_pourcentage"].apply(
+                            lambda x: f"{x:+.1f}%"
+                        )
+                        
+                        # Appliquer un style conditionnel pour les P&L
+                        def color_pnl(val):
+                            if "+" in str(val):
+                                return "color: green"
+                            elif "-" in str(val):
+                                return "color: red"
+                            return ""
+                        
+                        styled_df = df_display.style.applymap(color_pnl, subset=["pnl_montant", "pnl_pourcentage"])
+                    
+                    # Formatage final
+                    df_display["montant"] = df_display["montant"].apply(
+                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                    )
+                    df_display["prix_unitaire"] = df_display["prix_unitaire"].apply(
+                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                    )
+                    df_display["quantite"] = df_display["quantite"].apply(
+                        lambda x: f"{x:.8f}"
+                    )
+                    
+                    # Colonnes finales
+                    if "prix_actuel" in df_display.columns:
+                        df_display.columns = ["Date", "Symbole", "Quantité", "Prix Achat", "Investi", "Prix Actuel", "Valeur Actuelle", "P&L €", "P&L %"]
+                        st.dataframe(styled_df, use_container_width=True)
+                    else:
+                        df_display.columns = ["Date", "Symbole", "Quantité", "Prix Achat", "Investi"]
+                        st.dataframe(df_display, use_container_width=True)
+                        st.warning("Impossible de récupérer les prix actuels")
+                        
+                    # Métriques de performance globale crypto
+                    if "valeur_actuelle" in df_crypto.columns:
+                        total_investi = df_crypto["montant"].sum()
+                        total_actuel = df_crypto["valeur_actuelle"].sum()
+                        total_pnl = total_actuel - total_investi
+                        total_pnl_pct = (total_pnl / total_investi * 100) if total_investi > 0 else 0
+                        
+                        col_perf1, col_perf2, col_perf3 = st.columns(3)
+                        with col_perf1:
+                            st.metric("Valeur Actuelle", f"{total_actuel:,.0f}€".replace(",", " "))
+                        with col_perf2:
+                            st.metric("P&L Total", f"{total_pnl:+,.0f}€".replace(",", " "), 
+                                     delta=f"{total_pnl_pct:+.1f}%")
+                        with col_perf3:
+                            if total_pnl >= 0:
+                                st.success(f"🚀 +{total_pnl_pct:.1f}%")
+                            else:
+                                st.error(f"💥 {total_pnl_pct:.1f}%")
             else:
                 st.info("Aucun investissement crypto enregistré")
 
