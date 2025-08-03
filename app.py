@@ -440,7 +440,7 @@ def main():
                             (total_pnl / total_investi * 100) if total_investi > 0 else 0
                         )
 
-                        col_perf1, col_perf2, col_perf3 = st.columns(3)
+                        col_perf1, col_perf2 = st.columns(2)
                         with col_perf1:
                             st.metric("Valeur Actuelle", f"{total_actuel:,.0f}€".replace(",", " "))
                         with col_perf2:
@@ -449,11 +449,6 @@ def main():
                                 f"{total_pnl:+,.0f}€".replace(",", " "),
                                 delta=f"{total_pnl_pct:+.1f}%",
                             )
-                        with col_perf3:
-                            if total_pnl >= 0:
-                                st.success(f"📈 +{total_pnl_pct:.1f}%")
-                            else:
-                                st.error(f"📉 {total_pnl_pct:.1f}%")
             else:
                 st.info("Aucun investissement bourse enregistré")
 
