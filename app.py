@@ -50,7 +50,7 @@ def main():
 
     # Initialiser le service de prix
     if "price_service" not in st.session_state:
-        st.session_state.price_service = PriceService()
+        st.session_state.price_service = PriceService(supabase)
 
     # Sidebar pour saisie des revenus
     with st.sidebar:
@@ -235,7 +235,12 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
 
-            symbole_bourse = st.selectbox("Symbole", options=["HIWS"], key="bourse_symbole")
+            symbole_bourse = st.text_input(
+                "Symbole",
+                placeholder="Ex: NVIDIA, AAPL, HIWS...",
+                key="bourse_symbole",
+                help="Tapez le nom ou symbole de l'action. Le système essaiera de le trouver automatiquement.",
+            )
 
             hors_budget_bourse = st.checkbox(
                 "Hors budget (conversion/existant)",
