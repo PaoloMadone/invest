@@ -1,0 +1,78 @@
+name: Validation Pull Request
+
+# Déclenché uniquement sur les PRs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main ]
+
+jobs:
+  # Validation de base
+  basic-validation:
+    name: Validation de base
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v4
+
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+
+    - name: Installation des dépendances
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      env:
+        SUPABASE_URL: "https://fake-url.supabase.co"
+        SUPABASE_KEY: "fake-key-for-tests"
+
+    - name: Vérification syntaxe Python
+      run: |
+        python -m py_compile app.py price_service.py
+        echo "✅ Syntaxe Python validée"
+
+    - name: Vérification imports (price_service uniquement)
+      run: |
+        python -c "import price_service; print('✅ price_service.py importable')"
+
+  # Check des modifications de fichiers critiques
+  critical-files-check:
+    name: Vérification fichiers critiques
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Vérifier les modifications de app.py
+      run: |
+        if git diff --name-only origin/main..HEAD | grep -q "app.py"; then
+          echo "ℹ️ Modifications détectées dans app.py"
+          echo "Vérification manuelle recommandée pour:"
+          echo "- Fonctionnalités critiques (calculs, base de données)"
+          echo "- Interface utilisateur"
+          git diff --stat origin/main..HEAD app.py
+        else
+          echo "✅ Aucune modification dans app.py"
+        fi
+
+    - name: Vérifier les modifications de price_service.py
+      run: |
+        if git diff --name-only origin/main..HEAD | grep -q "price_service.py"; then
+          echo "⚠️ ATTENTION: Modifications détectées dans price_service.py"
+          echo "Vérification manuelle OBLIGATOIRE pour:"
+          echo "- Appels API externes"
+          echo "- Calculs de performance"
+          echo "- Cache des prix"
+          git diff --stat origin/main..HEAD price_service.py
+        else
+          echo "✅ Aucune modification dans price_service.py"
+        fi
+
+  # Les résultats sont visibles dans les logs GitHub Actions
+  # Validation manuelle recommandée pour les fichiers critiques
