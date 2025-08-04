@@ -268,23 +268,24 @@ def main():
 
             if existing_symbols_bourse:
                 # Utiliser un selectbox avec les symboles existants + option "Autre"
-                options = (
-                    ["-- Choisir un symbole --"] + existing_symbols_bourse + ["✏️ Autre symbole..."]
-                )
+                options = existing_symbols_bourse + ["🆕 Autre symbole..."]
                 symbole_choice = st.selectbox(
                     "Symbole",
                     options=options,
+                    index=None,
+                    placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
                     "pour saisir manuellement",
                 )
 
-                if symbole_choice == "✏️ Autre symbole...":
+                if symbole_choice == "🆕 Autre symbole...":
                     symbole_bourse = st.text_input(
-                        "Nouveau symbole",
+                        "",
                         placeholder="Ex: NVIDIA, AAPL, HIWS...",
                         help="Tapez le nom ou symbole de l'action",
+                        label_visibility="collapsed",
                     )
-                elif symbole_choice != "-- Choisir un symbole --":
+                elif symbole_choice is not None:
                     symbole_bourse = symbole_choice
                 else:
                     symbole_bourse = ""
@@ -301,19 +302,6 @@ def main():
                 help="Cochez si c'est un investissement existant "
                 "ou une conversion qui ne doit pas être déduit du budget",
                 key="bourse_hors_budget",
-            )
-
-            montant_bourse = st.number_input(
-                "Montant (€)",
-                min_value=0.0,
-                value=None,
-                step=10.0,
-                key="bourse_montant",
-                help="Saisissez le montant de votre investissement",
-            )
-            date_bourse = st.date_input("Date d'achat", key="bourse_date")
-            prix_unitaire_bourse = st.number_input(
-                "Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix"
             )
 
             # Bouton de validation du prix (pour tester la recherche)
@@ -336,6 +324,19 @@ def main():
                             st.rerun()
                         else:
                             st.error(f"❌ Aucun symbole trouvé pour '{symbole_bourse}'")
+
+            montant_bourse = st.number_input(
+                "Montant (€)",
+                min_value=0.0,
+                value=None,
+                step=10.0,
+                key="bourse_montant",
+                help="Saisissez le montant de votre investissement",
+            )
+            date_bourse = st.date_input("Date d'achat", key="bourse_date")
+            prix_unitaire_bourse = st.number_input(
+                "Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix"
+            )
 
             # Interface de choix si plusieurs options trouvées
             if hasattr(st.session_state, "symbol_choices") and st.session_state.symbol_choices:
@@ -537,25 +538,26 @@ def main():
 
             if existing_symbols_crypto:
                 # Utiliser un selectbox avec les symboles existants + option "Autre"
-                crypto_options = (
-                    ["-- Choisir un symbole --"] + existing_symbols_crypto + ["✏️ Autre symbole..."]
-                )
+                crypto_options = existing_symbols_crypto + ["🆕 Autre symbole..."]
                 symbole_choice_crypto = st.selectbox(
                     "Symbole",
                     options=crypto_options,
+                    index=None,
+                    placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
                     "pour saisir manuellement",
                     key="crypto_symbole_select",
                 )
 
-                if symbole_choice_crypto == "✏️ Autre symbole...":
+                if symbole_choice_crypto == "🆕 Autre symbole...":
                     symbole_crypto = st.text_input(
-                        "Nouveau symbole",
+                        "",
                         placeholder="Ex: BTC, ETH, ADA...",
                         help="Tapez le nom ou symbole de la crypto",
                         key="crypto_symbole_input",
+                        label_visibility="collapsed",
                     )
-                elif symbole_choice_crypto != "-- Choisir un symbole --":
+                elif symbole_choice_crypto is not None:
                     symbole_crypto = symbole_choice_crypto
                 else:
                     symbole_crypto = ""
@@ -573,6 +575,17 @@ def main():
                 "ou une conversion qui ne doit pas être déduit du budget",
                 key="crypto_hors_budget",
             )
+
+            # Bouton de validation du prix (pour tester la recherche)
+            if st.button("🔍 Vérifier le symbole", key="check_crypto_symbol"):
+                if symbole_crypto:
+                    with st.spinner(f"Recherche de {symbole_crypto}..."):
+                        price = st.session_state.price_service.get_crypto_price(symbole_crypto)
+
+                        if price is not None:
+                            st.success(f"✅ Prix trouvé: {price:,.2f}€".replace(",", " "))
+                        else:
+                            st.error(f"❌ Aucun prix trouvé pour '{symbole_crypto}'")
 
             montant_crypto = st.number_input(
                 "Montant (€)",
