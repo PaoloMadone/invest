@@ -173,27 +173,28 @@ def main():
 
     # Calculer les performances globales
     portfolio_summary = None
-    if data["bourse"] or data["crypto"]:
-        with st.spinner("Calcul des performances globales..."):
-            crypto_with_perf = (
-                st.session_state.price_service.calculate_investment_performance(
-                    data["crypto"], "crypto"
-                )
-                if data["crypto"]
-                else []
-            )
-
-            bourse_with_perf = (
-                st.session_state.price_service.calculate_investment_performance(
-                    data["bourse"], "bourse"
-                )
-                if data["bourse"]
-                else []
-            )
-
-            portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
-                crypto_with_perf, bourse_with_perf
-            )
+    # DÉSACTIVÉ TEMPORAIREMENT - Calcul des performances avec API
+    # if data["bourse"] or data["crypto"]:
+    #     with st.spinner("Calcul des performances globales..."):
+    #         crypto_with_perf = (
+    #             st.session_state.price_service.calculate_investment_performance(
+    #                 data["crypto"], "crypto"
+    #             )
+    #             if data["crypto"]
+    #             else []
+    #         )
+    # 
+    #         bourse_with_perf = (
+    #             st.session_state.price_service.calculate_investment_performance(
+    #                 data["bourse"], "bourse"
+    #             )
+    #             if data["bourse"]
+    #             else []
+    #         )
+    # 
+    #         portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+    #             crypto_with_perf, bourse_with_perf
+    #         )
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -305,12 +306,13 @@ def main():
             )
 
             # Bouton de validation du prix (pour tester la recherche)
-            if st.button("🔍 Vérifier le symbole", key="check_symbol"):
-                if symbole_bourse:
-                    with st.spinner(f"Recherche de {symbole_bourse}..."):
-                        price, choices = st.session_state.price_service.get_stock_price_with_choice(
-                            symbole_bourse
-                        )
+            # DÉSACTIVÉ TEMPORAIREMENT - Vérification de prix
+            # if st.button("🔍 Vérifier le symbole", key="check_symbol"):
+            #     if symbole_bourse:
+            #         with st.spinner(f"Recherche de {symbole_bourse}..."):
+            #             price, choices = st.session_state.price_service.get_stock_price_with_choice(
+            #                 symbole_bourse
+            #             )
 
                         if price is not None:
                             st.success(f"✅ Prix trouvé: {price:.2f}€")
@@ -413,13 +415,14 @@ def main():
             if data["bourse"]:
                 st.subheader("Portfolio Bourse")
 
-                # Calculer les performances avec prix actuels
-                with st.spinner("Récupération des prix actuels..."):
-                    bourse_with_perf = (
-                        st.session_state.price_service.calculate_investment_performance(
-                            data["bourse"], "bourse"
-                        )
-                    )
+                # DÉSACTIVÉ TEMPORAIREMENT - Calculer les performances avec prix actuels
+                # with st.spinner("Récupération des prix actuels..."):
+                #     bourse_with_perf = (
+                #         st.session_state.price_service.calculate_investment_performance(
+                #             data["bourse"], "bourse"
+                #         )
+                #     )
+                bourse_with_perf = data["bourse"]  # Utiliser les données sans prix actuels
 
                 if bourse_with_perf:
                     df_bourse = pd.DataFrame(bourse_with_perf)
@@ -627,13 +630,14 @@ def main():
             if data["crypto"]:
                 st.subheader("Portfolio Crypto")
 
-                # Calculer les performances avec prix actuels
-                with st.spinner("Récupération des prix crypto actuels..."):
-                    crypto_with_perf = (
-                        st.session_state.price_service.calculate_investment_performance(
-                            data["crypto"], "crypto"
-                        )
-                    )
+                # DÉSACTIVÉ TEMPORAIREMENT - Calculer les performances avec prix actuels
+                # with st.spinner("Récupération des prix crypto actuels..."):
+                #     crypto_with_perf = (
+                #         st.session_state.price_service.calculate_investment_performance(
+                #             data["crypto"], "crypto"
+                #         )
+                #     )
+                crypto_with_perf = data["crypto"]  # Utiliser les données sans prix actuels
 
                 if crypto_with_perf:
                     df_crypto = pd.DataFrame(crypto_with_perf)
