@@ -173,28 +173,28 @@ def main():
 
     # Calculer les performances globales
     portfolio_summary = None
-    # DÉSACTIVÉ TEMPORAIREMENT - Calcul des performances avec API
-    # if data["bourse"] or data["crypto"]:
-    #     with st.spinner("Calcul des performances globales..."):
-    #         crypto_with_perf = (
-    #             st.session_state.price_service.calculate_investment_performance(
-    #                 data["crypto"], "crypto"
-    #             )
-    #             if data["crypto"]
-    #             else []
-    #         )
-    # 
-    #         bourse_with_perf = (
-    #             st.session_state.price_service.calculate_investment_performance(
-    #                 data["bourse"], "bourse"
-    #             )
-    #             if data["bourse"]
-    #             else []
-    #         )
-    # 
-    #         portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
-    #             crypto_with_perf, bourse_with_perf
-    #         )
+    # Calcul des performances avec API
+    if data["bourse"] or data["crypto"]:
+        with st.spinner("Calcul des performances globales..."):
+            crypto_with_perf = (
+                st.session_state.price_service.calculate_investment_performance(
+                    data["crypto"], "crypto"
+                )
+                if data["crypto"]
+                else []
+            )
+ 
+            bourse_with_perf = (
+                st.session_state.price_service.calculate_investment_performance(
+                    data["bourse"], "bourse"
+                )
+                if data["bourse"]
+                else []
+            )
+ 
+            portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+                crypto_with_perf, bourse_with_perf
+            )
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -305,27 +305,35 @@ def main():
                 key="bourse_hors_budget",
             )
 
-            # Bouton de validation du prix (pour tester la recherche)
-            # DÉSACTIVÉ TEMPORAIREMENT - Vérification de prix
-            # if st.button("🔍 Vérifier le symbole", key="check_symbol"):
-            #     if symbole_bourse:
-            #         with st.spinner(f"Recherche de {symbole_bourse}..."):
-            #             price, choices = st.session_state.price_service.get_stock_price_with_choice(
-            #                 symbole_bourse
-            #             )
+            # Type d'opération
+            type_operation_bourse = st.selectbox(
+                "Type d'opération",
+                options=["achat", "roundup", "autre"],
+                index=0,
+                help="Sélectionnez le type d'opération (achat normal, roundup, ou autre)",
+                key="bourse_type_operation",
+            )
 
-                        if price is not None:
-                            st.success(f"✅ Prix trouvé: {price:.2f}€")
-                        elif choices:
-                            st.session_state.symbol_choices = choices
-                            st.session_state.pending_symbol = symbole_bourse
-                            st.info(
-                                f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. "
-                                f"Veuillez choisir ci-dessous :"
-                            )
-                            st.rerun()
-                        else:
-                            st.error(f"❌ Aucun symbole trouvé pour '{symbole_bourse}'")
+            # Bouton de validation du prix (pour tester la recherche)
+            if st.button("🔍 Vérifier le symbole", key="check_symbol"):
+                if symbole_bourse:
+                    with st.spinner(f"Recherche de {symbole_bourse}..."):
+                        price, choices = st.session_state.price_service.get_stock_price_with_choice(
+                            symbole_bourse
+                        )
+
+                    if price is not None:
+                        st.success(f"✅ Prix trouvé: {price:.2f}€")
+                    elif choices:
+                        st.session_state.symbol_choices = choices
+                        st.session_state.pending_symbol = symbole_bourse
+                        st.info(
+                            f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. "
+                            f"Veuillez choisir ci-dessous :"
+                        )
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Aucun symbole trouvé pour '{symbole_bourse}'")
 
             montant_bourse = st.number_input(
                 "Montant (€)",
@@ -400,6 +408,7 @@ def main():
                                 "prix_unitaire": prix_unitaire_bourse,
                                 "quantite": quantite,
                                 "hors_budget": hors_budget_bourse,
+                                "type_operation": type_operation_bourse,
                             }
                         ).execute()
 
@@ -415,23 +424,26 @@ def main():
             if data["bourse"]:
                 st.subheader("Portfolio Bourse")
 
-                # DÉSACTIVÉ TEMPORAIREMENT - Calculer les performances avec prix actuels
-                # with st.spinner("Récupération des prix actuels..."):
-                #     bourse_with_perf = (
-                #         st.session_state.price_service.calculate_investment_performance(
-                #             data["bourse"], "bourse"
-                #         )
-                #     )
-                bourse_with_perf = data["bourse"]  # Utiliser les données sans prix actuels
+                # Calculer les performances avec prix actuels
+                with st.spinner("Récupération des prix actuels..."):
+                    bourse_with_perf = (
+                        st.session_state.price_service.calculate_investment_performance(
+                            data["bourse"], "bourse"
+                        )
+                    )
 
                 if bourse_with_perf:
                     df_bourse = pd.DataFrame(bourse_with_perf)
                     df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
 
                     # Préparer les colonnes d'affichage
-                    df_display = df_bourse[
-                        ["date", "symbole", "quantite", "prix_unitaire", "montant"]
-                    ].copy()
+                    colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
+                    
+                    # Ajouter type_operation si disponible
+                    if "type_operation" in df_bourse.columns:
+                        colonnes_base.insert(2, "type_operation")
+                    
+                    df_display = df_bourse[colonnes_base].copy()
 
                     # Formatage de base d'abord
                     df_display["montant"] = df_display["montant"].apply(
@@ -463,17 +475,31 @@ def main():
                         )
 
                         # Renommer les colonnes d'abord
-                        df_display.columns = [
-                            "Date",
-                            "Symbole",
-                            "Quantité",
-                            "Prix Achat",
-                            "Investi",
-                            "Prix Actuel",
-                            "Valeur Actuelle",
-                            "P&L €",
-                            "P&L %",
-                        ]
+                        if "type_operation" in df_bourse.columns:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole", 
+                                "Type",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                                "Prix Actuel",
+                                "Valeur Actuelle",
+                                "P&L €",
+                                "P&L %",
+                            ]
+                        else:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                                "Prix Actuel",
+                                "Valeur Actuelle",
+                                "P&L €",
+                                "P&L %",
+                            ]
 
                         # Appliquer un style conditionnel pour les P&L
                         def color_pnl(val):
@@ -487,13 +513,23 @@ def main():
                         styled_df = df_display.style.map(color_pnl, subset=["P&L €", "P&L %"])
                         st.dataframe(styled_df, use_container_width=True)
                     else:
-                        df_display.columns = [
-                            "Date",
-                            "Symbole",
-                            "Quantité",
-                            "Prix Achat",
-                            "Investi",
-                        ]
+                        if "type_operation" in df_bourse.columns:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Type",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                            ]
+                        else:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                            ]
                         st.dataframe(df_display, use_container_width=True)
                         st.warning("Impossible de récupérer les prix actuels")
 
@@ -579,7 +615,7 @@ def main():
                 key="crypto_hors_budget",
             )
 
-            # Bouton de validation du prix (pour tester la recherche)
+            # Bouton de validation du prix crypto
             if st.button("🔍 Vérifier le symbole", key="check_crypto_symbol"):
                 if symbole_crypto:
                     with st.spinner(f"Recherche de {symbole_crypto}..."):
@@ -630,14 +666,13 @@ def main():
             if data["crypto"]:
                 st.subheader("Portfolio Crypto")
 
-                # DÉSACTIVÉ TEMPORAIREMENT - Calculer les performances avec prix actuels
-                # with st.spinner("Récupération des prix crypto actuels..."):
-                #     crypto_with_perf = (
-                #         st.session_state.price_service.calculate_investment_performance(
-                #             data["crypto"], "crypto"
-                #         )
-                #     )
-                crypto_with_perf = data["crypto"]  # Utiliser les données sans prix actuels
+                # Calculer les performances avec prix actuels
+                with st.spinner("Récupération des prix crypto actuels..."):
+                    crypto_with_perf = (
+                        st.session_state.price_service.calculate_investment_performance(
+                            data["crypto"], "crypto"
+                        )
+                    )
 
                 if crypto_with_perf:
                     df_crypto = pd.DataFrame(crypto_with_perf)
