@@ -183,7 +183,7 @@ def main():
                 if data["crypto"]
                 else []
             )
- 
+
             bourse_with_perf = (
                 st.session_state.price_service.calculate_investment_performance(
                     data["bourse"], "bourse"
@@ -191,7 +191,7 @@ def main():
                 if data["bourse"]
                 else []
             )
- 
+
             portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
                 crypto_with_perf, bourse_with_perf
             )
@@ -438,11 +438,11 @@ def main():
 
                     # Préparer les colonnes d'affichage
                     colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
-                    
+
                     # Ajouter type_operation si disponible
                     if "type_operation" in df_bourse.columns:
                         colonnes_base.insert(2, "type_operation")
-                    
+
                     df_display = df_bourse[colonnes_base].copy()
 
                     # Formatage de base d'abord
@@ -478,7 +478,7 @@ def main():
                         if "type_operation" in df_bourse.columns:
                             df_display.columns = [
                                 "Date",
-                                "Symbole", 
+                                "Symbole",
                                 "Type",
                                 "Quantité",
                                 "Prix Achat",
