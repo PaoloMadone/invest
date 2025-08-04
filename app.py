@@ -275,7 +275,7 @@ def main():
                     "Symbole",
                     options=options,
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                         "pour saisir manuellement",
+                    "pour saisir manuellement",
                 )
 
                 if symbole_choice == "✏️ Autre symbole...":
@@ -544,7 +544,7 @@ def main():
                     "Symbole",
                     options=crypto_options,
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                         "pour saisir manuellement",
+                    "pour saisir manuellement",
                     key="crypto_symbole_select",
                 )
 
