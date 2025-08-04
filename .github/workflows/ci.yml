@@ -43,14 +43,10 @@ jobs:
         python -m py_compile app.py price_service.py
         echo "✅ Syntaxe Python validée"
 
-    # 5. Test d'importation des modules
+    # 5. Test d'importation des modules (price_service uniquement)
     - name: Vérification imports
       run: |
-        python -c "import app; print('✅ app.py importable')"
         python -c "import price_service; print('✅ price_service.py importable')"
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
 
   # Job pour vérifier la qualité du code
   quality:

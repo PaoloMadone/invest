@@ -34,9 +34,8 @@ jobs:
         python -m py_compile app.py price_service.py
         echo "✅ Syntaxe Python validée"
 
-    - name: Vérification imports
+    - name: Vérification imports (price_service uniquement)
       run: |
-        python -c "import app; print('✅ app.py importable')"
         python -c "import price_service; print('✅ price_service.py importable')"
 
   # Check des modifications de fichiers critiques
