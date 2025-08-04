@@ -330,12 +330,15 @@ class PriceService:
         """
         variants_info = [
             (base_symbol, "NASDAQ/NYSE"),
+            (f"{base_symbol}.F", "Frankfurt (XETRA)"),
+            (f"{base_symbol}.DE", "Deutsche Börse"),
             (f"{base_symbol}.PA", "Euronext Paris"),
             (f"{base_symbol}.L", "London Stock Exchange"),
-            (f"{base_symbol}.F", "Frankfurt"),
             (f"{base_symbol}.MI", "Milano"),
             (f"{base_symbol}.MC", "Madrid"),
             (f"{base_symbol}.AS", "Amsterdam"),
+            (f"{base_symbol}.BR", "Brussels"),
+            (f"{base_symbol}.SW", "Switzerland"),
         ]
 
         found_variants = []
@@ -383,25 +386,7 @@ class PriceService:
                     self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
                     return price, None
 
-            # 2. Mapping manuel pour les cas spéciaux connus
-            manual_mapping = {
-                "NVIDIA": "NVDA",
-                "MICROSOFT": "MSFT",
-                "APPLE": "AAPL",
-                "TESLA": "TSLA",
-            }
-
-            if symbol.upper() in manual_mapping:
-                mapped_symbol = manual_mapping[symbol.upper()]
-                ticker = yf.Ticker(mapped_symbol)
-                hist = ticker.history(period="2d")
-
-                if not hist.empty:
-                    price = float(hist["Close"].iloc[-1])
-                    self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                    return price, None
-
-            # 3. Rechercher toutes les variantes
+            # 2. Rechercher toutes les variantes
             variants = self._find_multiple_variants(symbol.upper())
 
             if len(variants) == 0:
