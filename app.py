@@ -308,7 +308,7 @@ def main():
             # Type d'opération
             type_operation_bourse = st.selectbox(
                 "Type d'opération",
-                options=["achat", "roundup", "autre"],
+                options=["Achat", "RoundUP", "Autre"],
                 index=0,
                 help="Sélectionnez le type d'opération (achat normal, roundup, ou autre)",
                 key="bourse_type_operation",
