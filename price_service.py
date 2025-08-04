@@ -3,7 +3,7 @@ Service pour récupérer les prix en temps réel et calculer les performances
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import requests
@@ -351,7 +351,7 @@ class PriceService:
                     try:
                         info = ticker.info
                         company_name = info.get("longName", info.get("shortName", variant))
-                    except:
+                    except Exception:
                         company_name = variant
 
                     found_variants.append((variant, price, market_name, company_name))

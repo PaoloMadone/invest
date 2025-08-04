@@ -35,7 +35,7 @@ def test_price_service():
     performances = service.calculate_investment_performance(test_investments, "crypto")
     for perf in performances:
         if perf.get("prix_recupere"):
-            print(f"   Investissement BTC:")
+            print("   Investissement BTC:")
             print(f"   - Prix d'achat: {perf['prix_unitaire']:,.0f}€")
             print(f"   - Prix actuel: {perf['prix_actuel']:,.0f}€")
             print(f"   - P&L: {perf['pnl_montant']:+.2f}€ ({perf['pnl_pourcentage']:+.1f}%)")

@@ -36,6 +36,18 @@ def load_data():
         return {"revenus": [], "bourse": [], "crypto": []}
 
 
+def get_existing_symbols(data, asset_type):
+    """Récupère les symboles uniques existants pour un type d'actif"""
+    if asset_type == "bourse":
+        symbols = [inv["symbole"] for inv in data["bourse"]]
+    elif asset_type == "crypto":
+        symbols = [inv["symbole"] for inv in data["crypto"]]
+    else:
+        symbols = []
+
+    return sorted(list(set(symbols)))
+
+
 def save_data(data):
     # Sauvegarder aussi en local pour backup (optionnel)
     with open(DATA_FILE, "w") as f:
@@ -202,7 +214,6 @@ def main():
         if portfolio_summary:
             pnl_total = portfolio_summary["total"]["pnl_montant"]
             pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
-            delta_color = "normal" if pnl_total >= 0 else "inverse"
             st.metric(
                 "P&L Total", f"{pnl_total:+,.0f}€".replace(",", " "), delta=f"{pnl_pct:+.1f}%"
             )
@@ -252,12 +263,38 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
 
-            symbole_bourse = st.text_input(
-                "Symbole",
-                placeholder="Ex: NVIDIA, AAPL, HIWS...",
-                key="bourse_symbole",
-                help="Tapez le nom ou symbole de l'action. Le système essaiera de le trouver automatiquement.",
-            )
+            # Saisie du symbole avec liste déroulante
+            existing_symbols_bourse = get_existing_symbols(data, "bourse")
+
+            if existing_symbols_bourse:
+                # Utiliser un selectbox avec les symboles existants + option "Autre"
+                options = (
+                    ["-- Choisir un symbole --"] + existing_symbols_bourse + ["✏️ Autre symbole..."]
+                )
+                symbole_choice = st.selectbox(
+                    "Symbole",
+                    options=options,
+                    help="Choisissez un symbole existant ou 'Autre symbole...' "
+                         "pour saisir manuellement",
+                )
+
+                if symbole_choice == "✏️ Autre symbole...":
+                    symbole_bourse = st.text_input(
+                        "Nouveau symbole",
+                        placeholder="Ex: NVIDIA, AAPL, HIWS...",
+                        help="Tapez le nom ou symbole de l'action",
+                    )
+                elif symbole_choice != "-- Choisir un symbole --":
+                    symbole_bourse = symbole_choice
+                else:
+                    symbole_bourse = ""
+            else:
+                # Si aucun symbole existant, saisie directe
+                symbole_bourse = st.text_input(
+                    "Symbole",
+                    placeholder="Ex: NVIDIA, AAPL, HIWS...",
+                    help="Tapez le nom ou symbole de l'action",
+                )
 
             hors_budget_bourse = st.checkbox(
                 "Hors budget (conversion/existant)",
@@ -293,7 +330,8 @@ def main():
                             st.session_state.symbol_choices = choices
                             st.session_state.pending_symbol = symbole_bourse
                             st.info(
-                                f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. Veuillez choisir ci-dessous :"
+                                f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. "
+                                f"Veuillez choisir ci-dessous :"
                             )
                             st.rerun()
                         else:
@@ -332,7 +370,8 @@ def main():
 
                         if final_price:
                             st.success(
-                                f"💾 Choix sauvegardé ! {st.session_state.pending_symbol} → {chosen_variant} ({final_price:.2f}€)"
+                                f"💾 Choix sauvegardé ! {st.session_state.pending_symbol} → "
+                                f"{chosen_variant} ({final_price:.2f}€)"
                             )
 
                         # Nettoyer les variables de session
@@ -493,7 +532,41 @@ def main():
         with col1:
             st.subheader("Nouvel investissement")
 
-            symbole_crypto = st.selectbox("Symbole", options=["BTC"], key="crypto_symbole")
+            # Saisie du symbole avec liste déroulante
+            existing_symbols_crypto = get_existing_symbols(data, "crypto")
+
+            if existing_symbols_crypto:
+                # Utiliser un selectbox avec les symboles existants + option "Autre"
+                crypto_options = (
+                    ["-- Choisir un symbole --"] + existing_symbols_crypto + ["✏️ Autre symbole..."]
+                )
+                symbole_choice_crypto = st.selectbox(
+                    "Symbole",
+                    options=crypto_options,
+                    help="Choisissez un symbole existant ou 'Autre symbole...' "
+                         "pour saisir manuellement",
+                    key="crypto_symbole_select",
+                )
+
+                if symbole_choice_crypto == "✏️ Autre symbole...":
+                    symbole_crypto = st.text_input(
+                        "Nouveau symbole",
+                        placeholder="Ex: BTC, ETH, ADA...",
+                        help="Tapez le nom ou symbole de la crypto",
+                        key="crypto_symbole_input",
+                    )
+                elif symbole_choice_crypto != "-- Choisir un symbole --":
+                    symbole_crypto = symbole_choice_crypto
+                else:
+                    symbole_crypto = ""
+            else:
+                # Si aucun symbole existant, saisie directe
+                symbole_crypto = st.text_input(
+                    "Symbole",
+                    placeholder="Ex: BTC, ETH, ADA...",
+                    help="Tapez le nom ou symbole de la crypto",
+                    key="crypto_symbole_input",
+                )
             hors_budget_crypto = st.checkbox(
                 "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant "
