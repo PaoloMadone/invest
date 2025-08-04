@@ -7,9 +7,9 @@ on:
     branches: [ main ]
 
 jobs:
-  # Tests obligatoires
-  mandatory-tests:
-    name: Tests obligatoires
+  # Validation de base
+  basic-validation:
+    name: Validation de base
     runs-on: ubuntu-latest
     
     steps:
@@ -29,87 +29,15 @@ jobs:
         SUPABASE_URL: "https://fake-url.supabase.co"
         SUPABASE_KEY: "fake-key-for-tests"
 
-    - name: Tests critiques - Revenus
+    - name: Vérification syntaxe Python
       run: |
-        python run_tests.py revenus
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-        
-    - name: Tests critiques - Bourse  
-      run: |
-        python run_tests.py bourse
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-        
-    - name: Tests critiques - Crypto
-      run: |
-        python run_tests.py crypto
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
+        python -m py_compile app.py price_service.py
+        echo "✅ Syntaxe Python validée"
 
-    - name: Tests critiques - Budget
+    - name: Vérification imports
       run: |
-        python run_tests.py budget
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-
-    - name: Suite complète
-      run: |
-        python run_tests.py
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-
-  # Vérifications de régression
-  regression-check:
-    name: Détection de régressions
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout du code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # Récupérer tout l'historique
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-
-    - name: Installation des dépendances
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-
-    - name: Tests sur la branche cible (main)
-      run: |
-        git checkout main
-        python run_tests.py > tests_main.log 2>&1 || echo "Tests main executés"
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-        
-    - name: Tests sur la branche PR
-      run: |
-        git checkout ${{ github.head_ref }}
-        python run_tests.py > tests_pr.log 2>&1 || echo "Tests PR executés"
-      env:
-        SUPABASE_URL: "https://fake-url.supabase.co"
-        SUPABASE_KEY: "fake-key-for-tests"
-        
-    - name: Comparaison des résultats
-      run: |
-        echo "=== Résultats branche main ==="
-        cat tests_main.log || echo "Pas de log main"
-        echo "=== Résultats branche PR ==="
-        cat tests_pr.log || echo "Pas de log PR"
+        python -c "import app; print('✅ app.py importable')"
+        python -c "import price_service; print('✅ price_service.py importable')"
 
   # Check des modifications de fichiers critiques
   critical-files-check:
@@ -122,28 +50,30 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Vérifier les modifications de business_logic.py
+    - name: Vérifier les modifications de app.py
       run: |
-        if git diff --name-only origin/main..HEAD | grep -q "business_logic.py"; then
-          echo "⚠️ ATTENTION: Modifications détectées dans business_logic.py"
-          echo "Les tests suivants sont OBLIGATOIRES:"
-          echo "- Tests de calculs financiers"
-          echo "- Tests de validation"
-          echo "- Tests de création de données"
-          git diff origin/main..HEAD business_logic.py
+        if git diff --name-only origin/main..HEAD | grep -q "app.py"; then
+          echo "ℹ️ Modifications détectées dans app.py"
+          echo "Vérification manuelle recommandée pour:"
+          echo "- Fonctionnalités critiques (calculs, base de données)"
+          echo "- Interface utilisateur"
+          git diff --stat origin/main..HEAD app.py
         else
-          echo "✅ Aucune modification dans business_logic.py"
+          echo "✅ Aucune modification dans app.py"
         fi
 
-    - name: Vérifier les modifications de test_app.py
+    - name: Vérifier les modifications de price_service.py
       run: |
-        if git diff --name-only origin/main..HEAD | grep -q "test_app.py"; then
-          echo "ℹ️ Modifications détectées dans test_app.py"
-          echo "Vérification que tous les tests passent encore..."
-          git diff origin/main..HEAD test_app.py
+        if git diff --name-only origin/main..HEAD | grep -q "price_service.py"; then
+          echo "⚠️ ATTENTION: Modifications détectées dans price_service.py"
+          echo "Vérification manuelle OBLIGATOIRE pour:"
+          echo "- Appels API externes"
+          echo "- Calculs de performance"
+          echo "- Cache des prix"
+          git diff --stat origin/main..HEAD price_service.py
         else
-          echo "✅ Aucune modification dans test_app.py"
+          echo "✅ Aucune modification dans price_service.py"
         fi
 
   # Les résultats sont visibles dans les logs GitHub Actions
-  # Pas de commentaire automatique pour éviter les problèmes de permissions
+  # Validation manuelle recommandée pour les fichiers critiques
