@@ -169,32 +169,57 @@ def main():
     with col_refresh:
         if st.button("🔄 Actualiser les prix"):
             st.session_state.price_service.clear_cache()
+            # Vider aussi le cache des performances
+            if "portfolio_summary" in st.session_state:
+                del st.session_state.portfolio_summary
+            if "bourse_data_processed" in st.session_state:
+                del st.session_state.bourse_data_processed
+            if "crypto_data_processed" in st.session_state:
+                del st.session_state.crypto_data_processed
+            # Vider les caches des onglets individuels
+            for key in list(st.session_state.keys()):
+                if key.startswith("bourse_perf_") or key.startswith("crypto_perf_"):
+                    del st.session_state[key]
             st.rerun()
 
-    # Calculer les performances globales
+    # Calculer les performances globales seulement si on a des investissements ET si on clique sur actualiser
     portfolio_summary = None
-    # Calcul des performances avec API
-    if data["bourse"] or data["crypto"]:
-        with st.spinner("Calcul des performances globales..."):
-            crypto_with_perf = (
-                st.session_state.price_service.calculate_investment_performance(
-                    data["crypto"], "crypto"
-                )
-                if data["crypto"]
-                else []
-            )
+    # Ne calculer les performances que si explicitement demandé
+    if (
+        "portfolio_summary" not in st.session_state
+        or (data["bourse"] and not st.session_state.get("bourse_data_processed", False))
+        or (data["crypto"] and not st.session_state.get("crypto_data_processed", False))
+    ):
 
-            bourse_with_perf = (
-                st.session_state.price_service.calculate_investment_performance(
-                    data["bourse"], "bourse"
+        if data["bourse"] or data["crypto"]:
+            with st.spinner("Calcul des performances globales..."):
+                crypto_with_perf = (
+                    st.session_state.price_service.calculate_investment_performance(
+                        data["crypto"], "crypto"
+                    )
+                    if data["crypto"]
+                    else []
                 )
-                if data["bourse"]
-                else []
-            )
 
-            portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
-                crypto_with_perf, bourse_with_perf
-            )
+                bourse_with_perf = (
+                    st.session_state.price_service.calculate_investment_performance(
+                        data["bourse"], "bourse"
+                    )
+                    if data["bourse"]
+                    else []
+                )
+
+                portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+                    crypto_with_perf, bourse_with_perf
+                )
+
+                # Mettre en cache dans la session
+                st.session_state.portfolio_summary = portfolio_summary
+                st.session_state.bourse_data_processed = bool(data["bourse"])
+                st.session_state.crypto_data_processed = bool(data["crypto"])
+    else:
+        # Utiliser les données en cache
+        portfolio_summary = st.session_state.get("portfolio_summary")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -403,13 +428,18 @@ def main():
             if data["bourse"]:
                 st.subheader("Portfolio Bourse")
 
-                # Calculer les performances avec prix actuels
-                with st.spinner("Récupération des prix actuels..."):
-                    bourse_with_perf = (
-                        st.session_state.price_service.calculate_investment_performance(
-                            data["bourse"], "bourse"
+                # Calculer les performances avec prix actuels seulement si nécessaire
+                bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
+                if bourse_cache_key not in st.session_state:
+                    with st.spinner("Récupération des prix actuels..."):
+                        bourse_with_perf = (
+                            st.session_state.price_service.calculate_investment_performance(
+                                data["bourse"], "bourse"
+                            )
                         )
-                    )
+                        st.session_state[bourse_cache_key] = bourse_with_perf
+                else:
+                    bourse_with_perf = st.session_state[bourse_cache_key]
 
                 if bourse_with_perf:
                     df_bourse = pd.DataFrame(bourse_with_perf)
@@ -634,13 +664,18 @@ def main():
             if data["crypto"]:
                 st.subheader("Portfolio Crypto")
 
-                # Calculer les performances avec prix actuels
-                with st.spinner("Récupération des prix crypto actuels..."):
-                    crypto_with_perf = (
-                        st.session_state.price_service.calculate_investment_performance(
-                            data["crypto"], "crypto"
+                # Calculer les performances avec prix actuels seulement si nécessaire
+                crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
+                if crypto_cache_key not in st.session_state:
+                    with st.spinner("Récupération des prix crypto actuels..."):
+                        crypto_with_perf = (
+                            st.session_state.price_service.calculate_investment_performance(
+                                data["crypto"], "crypto"
+                            )
                         )
-                    )
+                        st.session_state[crypto_cache_key] = crypto_with_perf
+                else:
+                    crypto_with_perf = st.session_state[crypto_cache_key]
 
                 if crypto_with_perf:
                     df_crypto = pd.DataFrame(crypto_with_perf)
