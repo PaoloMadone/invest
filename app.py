@@ -830,28 +830,7 @@ def main():
     with tab_overview:
         st.header("Vue d'ensemble")
 
-        # Métriques budgétaires globales
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
-
-        with col2:
-            st.metric("Total Investi", f"{total_investi_reel:,.2f}€".replace(",", " "))
-
-        with col3:
-            if portfolio_summary:
-                valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
-                st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
-            else:
-                st.metric("Valeur Actuelle", f"{total_investi_reel:,.2f}€".replace(",", " "))
-
-        with col4:
-            st.metric("Total Restant", f"{total_restant:,.2f}€".replace(",", " "))
-
-        st.markdown("---")
-
-        # Calculer les performances globales ici seulement
+        # Calculer les performances globales ici seulement si nécessaire
         if not portfolio_summary and (data["bourse"] or data["crypto"]):
             with st.spinner("Calcul des performances globales..."):
                 crypto_with_perf = (
@@ -878,9 +857,9 @@ def main():
                 st.session_state.portfolio_summary = portfolio_summary
 
         if data["bourse"] or data["crypto"]:
-            # Afficher les performances globales
+            # Section Performances
             if portfolio_summary:
-                st.subheader("Performances Globales")
+                st.subheader("📊 Performances du Portfolio")
                 
                 col1, col2, col3, col4 = st.columns(4)
                 
@@ -900,36 +879,7 @@ def main():
                     pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
                     st.metric("P&L %", f"{pnl_pct:+.1f}%")
 
-                st.markdown("---")
 
-            # Graphique évolution temporelle
-            all_investments = []
-
-            for inv in data["bourse"]:
-                all_investments.append(
-                    {
-                        "date": inv["date"],
-                        "montant": inv["montant"],
-                        "type": "Bourse",
-                        "symbole": inv["symbole"],
-                    }
-                )
-
-            for inv in data["crypto"]:
-                all_investments.append(
-                    {
-                        "date": inv["date"],
-                        "montant": inv["montant"],
-                        "type": "Crypto",
-                        "symbole": inv["symbole"],
-                    }
-                )
-
-            if all_investments:
-                df_all = pd.DataFrame(all_investments)
-                df_all["date"] = pd.to_datetime(df_all["date"])
-                df_all = df_all.sort_values("date")
-                df_all["montant_cumule"] = df_all["montant"].cumsum()
 
         else:
             st.info("Aucun investissement enregistré pour le moment")
