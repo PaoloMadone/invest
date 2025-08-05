@@ -314,26 +314,6 @@ def main():
                 key="bourse_type_operation",
             )
 
-            # Bouton de validation du prix (pour tester la recherche)
-            if st.button("🔍 Vérifier le symbole", key="check_symbol"):
-                if symbole_bourse:
-                    with st.spinner(f"Recherche de {symbole_bourse}..."):
-                        price, choices = st.session_state.price_service.get_stock_price_with_choice(
-                            symbole_bourse
-                        )
-
-                    if price is not None:
-                        st.success(f"✅ Prix trouvé: {price:.2f}€")
-                    elif choices:
-                        st.session_state.symbol_choices = choices
-                        st.session_state.pending_symbol = symbole_bourse
-                        st.info(
-                            f"🔍 Plusieurs options trouvées pour '{symbole_bourse}'. "
-                            f"Veuillez choisir ci-dessous :"
-                        )
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Aucun symbole trouvé pour '{symbole_bourse}'")
 
             montant_bourse = st.number_input(
                 "Montant (€)",
@@ -615,16 +595,6 @@ def main():
                 key="crypto_hors_budget",
             )
 
-            # Bouton de validation du prix crypto
-            if st.button("🔍 Vérifier le symbole", key="check_crypto_symbol"):
-                if symbole_crypto:
-                    with st.spinner(f"Recherche de {symbole_crypto}..."):
-                        price = st.session_state.price_service.get_crypto_price(symbole_crypto)
-
-                        if price is not None:
-                            st.success(f"✅ Prix trouvé: {price:,.2f}€".replace(",", " "))
-                        else:
-                            st.error(f"❌ Aucun prix trouvé pour '{symbole_crypto}'")
 
             montant_crypto = st.number_input(
                 "Montant (€)",

@@ -336,48 +336,6 @@ class PriceService:
         except Exception as e:
             print(f"Erreur lors de la sauvegarde du mapping: {e}")
 
-    def _find_multiple_variants(self, base_symbol: str) -> List[Tuple[str, float, str]]:
-        """
-        Trouve toutes les variantes valides d'un symbole
-
-        Returns:
-            Liste de tuples (symbole, prix, nom_marché)
-        """
-        variants_info = [
-            (base_symbol, "NASDAQ/NYSE"),
-            (f"{base_symbol}.F", "Frankfurt (XETRA)"),
-            (f"{base_symbol}.DE", "Deutsche Börse"),
-            (f"{base_symbol}.PA", "Euronext Paris"),
-            (f"{base_symbol}.L", "London Stock Exchange"),
-            (f"{base_symbol}.MI", "Milano"),
-            (f"{base_symbol}.MC", "Madrid"),
-            (f"{base_symbol}.AS", "Amsterdam"),
-            (f"{base_symbol}.BR", "Brussels"),
-            (f"{base_symbol}.SW", "Switzerland"),
-        ]
-
-        found_variants = []
-
-        for variant, market_name in variants_info:
-            try:
-                ticker = yf.Ticker(variant)
-                hist = ticker.history(period="2d")
-
-                if not hist.empty:
-                    price = float(hist["Close"].iloc[-1])
-                    # Essayer de récupérer le nom de l'entreprise
-                    try:
-                        info = ticker.info
-                        company_name = info.get("longName", info.get("shortName", variant))
-                    except Exception:
-                        company_name = variant
-
-                    found_variants.append((variant, price, market_name, company_name))
-
-            except Exception:
-                continue
-
-        return found_variants
 
     def get_stock_price_with_choice(self, symbol: str) -> Tuple[Optional[float], Optional[List]]:
         """
@@ -407,22 +365,8 @@ class PriceService:
                 except Exception:
                     print(f"❌ Erreur avec le mapping {symbol} -> {learned_symbol}")
 
-            # 2. Rechercher toutes les variantes
-            variants = self._find_multiple_variants(symbol.upper())
-
-            if len(variants) == 0:
-                return None, None
-            elif len(variants) == 1:
-                # Un seul résultat trouvé, l'utiliser directement
-                variant, price, market, company = variants[0]
-                self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                # Sauvegarder automatiquement si c'est différent du symbole original
-                if variant != symbol.upper():
-                    self._save_learned_mapping(symbol, variant, company)
-                return price, None
-            else:
-                # Plusieurs résultats, retourner pour que l'utilisateur choisisse
-                return None, variants
+            # 2. Pas de mapping trouvé
+            return None, None
 
         except Exception as e:
             print(f"Erreur lors de la récupération du prix de {symbol}: {e}")
