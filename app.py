@@ -423,13 +423,13 @@ def main():
                 # Calculer les performances avec prix actuels seulement si nécessaire
                 bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
                 if bourse_cache_key not in st.session_state:
-                    with st.spinner("Récupération des prix actuels..."):
-                        bourse_with_perf = (
-                            st.session_state.price_service.calculate_investment_performance(
-                                data["bourse"], "bourse"
-                            )
+                    # Pas de spinner pour éviter les reruns intempestifs
+                    bourse_with_perf = (
+                        st.session_state.price_service.calculate_investment_performance(
+                            data["bourse"], "bourse"
                         )
-                        st.session_state[bourse_cache_key] = bourse_with_perf
+                    )
+                    st.session_state[bourse_cache_key] = bourse_with_perf
                 else:
                     bourse_with_perf = st.session_state[bourse_cache_key]
 
