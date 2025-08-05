@@ -182,71 +182,49 @@ def main():
                     del st.session_state[key]
             st.rerun()
 
-    # Calculer les performances globales seulement si on a des investissements ET si on clique sur actualiser
-    portfolio_summary = None
-    # Ne calculer les performances que si explicitement demandé
-    if (
-        "portfolio_summary" not in st.session_state
-        or (data["bourse"] and not st.session_state.get("bourse_data_processed", False))
-        or (data["crypto"] and not st.session_state.get("crypto_data_processed", False))
-    ):
-
-        if data["bourse"] or data["crypto"]:
-            with st.spinner("Calcul des performances globales..."):
-                crypto_with_perf = (
-                    st.session_state.price_service.calculate_investment_performance(
-                        data["crypto"], "crypto"
-                    )
-                    if data["crypto"]
-                    else []
-                )
-
-                bourse_with_perf = (
-                    st.session_state.price_service.calculate_investment_performance(
-                        data["bourse"], "bourse"
-                    )
-                    if data["bourse"]
-                    else []
-                )
-
-                portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
-                    crypto_with_perf, bourse_with_perf
-                )
-
-                # Mettre en cache dans la session
-                st.session_state.portfolio_summary = portfolio_summary
-                st.session_state.bourse_data_processed = bool(data["bourse"])
-                st.session_state.crypto_data_processed = bool(data["crypto"])
-    else:
-        # Utiliser les données en cache
-        portfolio_summary = st.session_state.get("portfolio_summary")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
-
-    with col2:
-        st.metric("Total Investi", f"{total_investi_reel:,.2f}€".replace(",", " "))
-
-    with col3:
-        if portfolio_summary:
-            valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
-            st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
-        else:
-            st.metric("Valeur Actuelle", f"{total_investi_reel:,.2f}€".replace(",", " "))
-
-    with col4:
-        if portfolio_summary:
-            pnl_total = portfolio_summary["total"]["pnl_montant"]
-            pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
-            st.metric(
-                "P&L Total", f"{pnl_total:+,.2f}€".replace(",", " "), delta=f"{pnl_pct:+.1f}%"
+    # Calculer les performances globales au chargement si nécessaire
+    portfolio_summary = st.session_state.get("portfolio_summary")
+    
+    # Ne calculer que si on n'a pas de résumé ET qu'on n'est pas en train de gérer des choix de symboles
+    should_calculate_performance = (
+        not portfolio_summary 
+        and (data["bourse"] or data["crypto"])
+        and not hasattr(st.session_state, "symbol_choices")
+        and not hasattr(st.session_state, "pending_symbol")
+    )
+    
+    if should_calculate_performance:
+        # Calculer sans spinner pour éviter les rerun intempestifs
+        crypto_with_perf = (
+            st.session_state.price_service.calculate_investment_performance(
+                data["crypto"], "crypto"
             )
-        else:
-            st.metric("Total Restant", f"{total_restant:,.2f}€".replace(",", " "))
+            if data["crypto"]
+            else []
+        )
 
-    st.markdown("---")
+        bourse_with_perf = (
+            st.session_state.price_service.calculate_investment_performance(
+                data["bourse"], "bourse"
+            )
+            if data["bourse"]
+            else []
+        )
+
+        portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+            crypto_with_perf, bourse_with_perf
+        )
+
+        # Mettre en cache dans la session
+        st.session_state.portfolio_summary = portfolio_summary
+        
+        # Mettre aussi en cache les données individuelles pour les onglets
+        if bourse_with_perf:
+            bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
+            st.session_state[bourse_cache_key] = bourse_with_perf
+        if crypto_with_perf:
+            crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
+            st.session_state[crypto_cache_key] = crypto_with_perf
 
     # Tabs pour Bourse et Crypto
     tab_revenus, tab_bourse, tab_crypto, tab_overview = st.tabs(
@@ -265,13 +243,29 @@ def main():
         with col_m3:
             st.metric("Restant Bourse", f"{budget_restant_bourse:,.2f}€".replace(",", " "))
         with col_m4:
-            if portfolio_summary and portfolio_summary["bourse"]["valeur_actuelle"] > 0:
+            # Calculer la valeur actuelle à partir des données individuelles si disponibles
+            bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
+            bourse_with_perf = st.session_state.get(bourse_cache_key)
+            
+            if bourse_with_perf and any(inv.get("valeur_actuelle") for inv in bourse_with_perf):
+                valeur_actuelle_bourse = sum(inv.get("valeur_actuelle", inv["montant"]) for inv in bourse_with_perf)
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.2f}€".replace(",", " "))
+            elif portfolio_summary and portfolio_summary["bourse"]["valeur_actuelle"] > 0:
                 valeur_actuelle_bourse = portfolio_summary["bourse"]["valeur_actuelle"]
                 st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.2f}€".replace(",", " "))
             else:
                 st.metric("Valeur Actuelle", f"{total_investi_bourse:,.2f}€".replace(",", " "))
         with col_m5:
-            if portfolio_summary and portfolio_summary["bourse"]["pnl_montant"] is not None:
+            # Calculer le P&L à partir des données individuelles si disponibles
+            if bourse_with_perf and any(inv.get("pnl_montant") is not None for inv in bourse_with_perf):
+                pnl_bourse = sum(inv.get("pnl_montant", 0) for inv in bourse_with_perf if inv.get("pnl_montant") is not None)
+                pnl_pct_bourse = (pnl_bourse / total_investi_bourse * 100) if total_investi_bourse > 0 else 0
+                st.metric(
+                    "P&L Total",
+                    f"{pnl_bourse:+,.2f}€".replace(",", " "),
+                    delta=f"{pnl_pct_bourse:+.1f}%",
+                )
+            elif portfolio_summary and portfolio_summary["bourse"]["pnl_montant"] is not None:
                 pnl_bourse = portfolio_summary["bourse"]["pnl_montant"]
                 pnl_pct_bourse = portfolio_summary["bourse"]["pnl_pourcentage"]
                 st.metric(
@@ -557,13 +551,29 @@ def main():
         with col_m3:
             st.metric("Restant Crypto", f"{budget_restant_crypto:,.2f}€".replace(",", " "))
         with col_m4:
-            if portfolio_summary and portfolio_summary["crypto"]["valeur_actuelle"] > 0:
+            # Calculer la valeur actuelle à partir des données individuelles si disponibles
+            crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
+            crypto_with_perf = st.session_state.get(crypto_cache_key)
+            
+            if crypto_with_perf and any(inv.get("valeur_actuelle") for inv in crypto_with_perf):
+                valeur_actuelle_crypto = sum(inv.get("valeur_actuelle", inv["montant"]) for inv in crypto_with_perf)
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.2f}€".replace(",", " "))
+            elif portfolio_summary and portfolio_summary["crypto"]["valeur_actuelle"] > 0:
                 valeur_actuelle_crypto = portfolio_summary["crypto"]["valeur_actuelle"]
                 st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.2f}€".replace(",", " "))
             else:
                 st.metric("Valeur Actuelle", f"{total_investi_crypto:,.2f}€".replace(",", " "))
         with col_m5:
-            if portfolio_summary and portfolio_summary["crypto"]["pnl_montant"] is not None:
+            # Calculer le P&L à partir des données individuelles si disponibles
+            if crypto_with_perf and any(inv.get("pnl_montant") is not None for inv in crypto_with_perf):
+                pnl_crypto = sum(inv.get("pnl_montant", 0) for inv in crypto_with_perf if inv.get("pnl_montant") is not None)
+                pnl_pct_crypto = (pnl_crypto / total_investi_crypto * 100) if total_investi_crypto > 0 else 0
+                st.metric(
+                    "P&L Total",
+                    f"{pnl_crypto:+,.2f}€".replace(",", " "),
+                    delta=f"{pnl_pct_crypto:+.1f}%",
+                )
+            elif portfolio_summary and portfolio_summary["crypto"]["pnl_montant"] is not None:
                 pnl_crypto = portfolio_summary["crypto"]["pnl_montant"]
                 pnl_pct_crypto = portfolio_summary["crypto"]["pnl_pourcentage"]
                 st.metric(
@@ -820,7 +830,78 @@ def main():
     with tab_overview:
         st.header("Vue d'ensemble")
 
+        # Métriques budgétaires globales
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
+
+        with col2:
+            st.metric("Total Investi", f"{total_investi_reel:,.2f}€".replace(",", " "))
+
+        with col3:
+            if portfolio_summary:
+                valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
+                st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
+            else:
+                st.metric("Valeur Actuelle", f"{total_investi_reel:,.2f}€".replace(",", " "))
+
+        with col4:
+            st.metric("Total Restant", f"{total_restant:,.2f}€".replace(",", " "))
+
+        st.markdown("---")
+
+        # Calculer les performances globales ici seulement
+        if not portfolio_summary and (data["bourse"] or data["crypto"]):
+            with st.spinner("Calcul des performances globales..."):
+                crypto_with_perf = (
+                    st.session_state.price_service.calculate_investment_performance(
+                        data["crypto"], "crypto"
+                    )
+                    if data["crypto"]
+                    else []
+                )
+
+                bourse_with_perf = (
+                    st.session_state.price_service.calculate_investment_performance(
+                        data["bourse"], "bourse"
+                    )
+                    if data["bourse"]
+                    else []
+                )
+
+                portfolio_summary = st.session_state.price_service.calculate_portfolio_summary(
+                    crypto_with_perf, bourse_with_perf
+                )
+
+                # Mettre en cache dans la session
+                st.session_state.portfolio_summary = portfolio_summary
+
         if data["bourse"] or data["crypto"]:
+            # Afficher les performances globales
+            if portfolio_summary:
+                st.subheader("Performances Globales")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    total_investi = portfolio_summary["total"]["valeur_initiale"]
+                    st.metric("Total Investi", f"{total_investi:,.2f}€".replace(",", " "))
+                
+                with col2:
+                    valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
+                    st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
+                
+                with col3:
+                    pnl_montant = portfolio_summary["total"]["pnl_montant"]
+                    st.metric("P&L €", f"{pnl_montant:+,.2f}€".replace(",", " "))
+                
+                with col4:
+                    pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
+                    st.metric("P&L %", f"{pnl_pct:+.1f}%")
+
+                st.markdown("---")
+
             # Graphique évolution temporelle
             all_investments = []
 
