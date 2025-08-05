@@ -202,24 +202,24 @@ def main():
         st.metric("Budget Total", f"{budget_total:,}€".replace(",", " "))
 
     with col2:
-        st.metric("Total Investi", f"{total_investi_reel:,.0f}€".replace(",", " "))
+        st.metric("Total Investi", f"{total_investi_reel:,.2f}€".replace(",", " "))
 
     with col3:
         if portfolio_summary:
             valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
-            st.metric("Valeur Actuelle", f"{valeur_actuelle:,.0f}€".replace(",", " "))
+            st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
         else:
-            st.metric("Valeur Actuelle", f"{total_investi_reel:,.0f}€".replace(",", " "))
+            st.metric("Valeur Actuelle", f"{total_investi_reel:,.2f}€".replace(",", " "))
 
     with col4:
         if portfolio_summary:
             pnl_total = portfolio_summary["total"]["pnl_montant"]
             pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
             st.metric(
-                "P&L Total", f"{pnl_total:+,.0f}€".replace(",", " "), delta=f"{pnl_pct:+.1f}%"
+                "P&L Total", f"{pnl_total:+,.2f}€".replace(",", " "), delta=f"{pnl_pct:+.1f}%"
             )
         else:
-            st.metric("Total Restant", f"{total_restant:,.0f}€".replace(",", " "))
+            st.metric("Total Restant", f"{total_restant:,.2f}€".replace(",", " "))
 
     st.markdown("---")
 
@@ -236,22 +236,22 @@ def main():
         with col_m1:
             st.metric("Budget Bourse", f"{budget_bourse:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Bourse", f"{total_investi_bourse:,.0f}€".replace(",", " "))
+            st.metric("Investi Bourse", f"{total_investi_bourse:,.2f}€".replace(",", " "))
         with col_m3:
-            st.metric("Restant Bourse", f"{budget_restant_bourse:,.0f}€".replace(",", " "))
+            st.metric("Restant Bourse", f"{budget_restant_bourse:,.2f}€".replace(",", " "))
         with col_m4:
             if portfolio_summary and portfolio_summary["bourse"]["valeur_actuelle"] > 0:
                 valeur_actuelle_bourse = portfolio_summary["bourse"]["valeur_actuelle"]
-                st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.0f}€".replace(",", " "))
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.2f}€".replace(",", " "))
             else:
-                st.metric("Valeur Actuelle", f"{total_investi_bourse:,.0f}€".replace(",", " "))
+                st.metric("Valeur Actuelle", f"{total_investi_bourse:,.2f}€".replace(",", " "))
         with col_m5:
             if portfolio_summary and portfolio_summary["bourse"]["pnl_montant"] is not None:
                 pnl_bourse = portfolio_summary["bourse"]["pnl_montant"]
                 pnl_pct_bourse = portfolio_summary["bourse"]["pnl_pourcentage"]
                 st.metric(
                     "P&L Total",
-                    f"{pnl_bourse:+,.0f}€".replace(",", " "),
+                    f"{pnl_bourse:+,.2f}€".replace(",", " "),
                     delta=f"{pnl_pct_bourse:+.1f}%",
                 )
             else:
@@ -308,7 +308,7 @@ def main():
             # Type d'opération
             type_operation_bourse = st.selectbox(
                 "Type d'opération",
-                options=["Achat", "RoundUP", "Autre"],
+                options=["Achat", "RoundUP", "SaveBack"],
                 index=0,
                 help="Sélectionnez le type d'opération (achat normal, roundup, ou autre)",
                 key="bourse_type_operation",
@@ -447,7 +447,7 @@ def main():
 
                     # Formatage de base d'abord
                     df_display["montant"] = df_display["montant"].apply(
-                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
                     )
                     df_display["prix_unitaire"] = df_display["prix_unitaire"].apply(
                         lambda x: f"{x:,.2f}€".replace(",", " ")
@@ -465,10 +465,10 @@ def main():
                             lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
                         )
                         df_display["valeur_actuelle"] = df_bourse["valeur_actuelle"].apply(
-                            lambda x: f"{x:,.0f}€".replace(",", " ")
+                            lambda x: f"{x:,.2f}€".replace(",", " ")
                         )
                         df_display["pnl_montant"] = df_bourse["pnl_montant"].apply(
-                            lambda x: f"{x:+,.0f}€".replace(",", " ")
+                            lambda x: f"{x:+,.2f}€".replace(",", " ")
                         )
                         df_display["pnl_pourcentage"] = df_bourse["pnl_pourcentage"].apply(
                             lambda x: f"{x:+.1f}%"
@@ -544,22 +544,22 @@ def main():
         with col_m1:
             st.metric("Budget Crypto", f"{budget_crypto:,}€".replace(",", " "))
         with col_m2:
-            st.metric("Investi Crypto", f"{total_investi_crypto:,.0f}€".replace(",", " "))
+            st.metric("Investi Crypto", f"{total_investi_crypto:,.2f}€".replace(",", " "))
         with col_m3:
-            st.metric("Restant Crypto", f"{budget_restant_crypto:,.0f}€".replace(",", " "))
+            st.metric("Restant Crypto", f"{budget_restant_crypto:,.2f}€".replace(",", " "))
         with col_m4:
             if portfolio_summary and portfolio_summary["crypto"]["valeur_actuelle"] > 0:
                 valeur_actuelle_crypto = portfolio_summary["crypto"]["valeur_actuelle"]
-                st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.0f}€".replace(",", " "))
+                st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.2f}€".replace(",", " "))
             else:
-                st.metric("Valeur Actuelle", f"{total_investi_crypto:,.0f}€".replace(",", " "))
+                st.metric("Valeur Actuelle", f"{total_investi_crypto:,.2f}€".replace(",", " "))
         with col_m5:
             if portfolio_summary and portfolio_summary["crypto"]["pnl_montant"] is not None:
                 pnl_crypto = portfolio_summary["crypto"]["pnl_montant"]
                 pnl_pct_crypto = portfolio_summary["crypto"]["pnl_pourcentage"]
                 st.metric(
                     "P&L Total",
-                    f"{pnl_crypto:+,.0f}€".replace(",", " "),
+                    f"{pnl_crypto:+,.2f}€".replace(",", " "),
                     delta=f"{pnl_pct_crypto:+.1f}%",
                 )
             else:
@@ -685,10 +685,10 @@ def main():
 
                     # Formatage de base d'abord
                     df_display["montant"] = df_display["montant"].apply(
-                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
                     )
                     df_display["prix_unitaire"] = df_display["prix_unitaire"].apply(
-                        lambda x: f"{x:,.0f}€".replace(",", " ")
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
                     )
                     df_display["quantite"] = df_display["quantite"].apply(lambda x: f"{x:.8f}")
 
@@ -700,13 +700,13 @@ def main():
                         and "pnl_pourcentage" in df_crypto.columns
                     ):
                         df_display["prix_actuel"] = df_crypto["prix_actuel"].apply(
-                            lambda x: f"{x:,.0f}€".replace(",", " ") if x is not None else "N/A"
+                            lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
                         )
                         df_display["valeur_actuelle"] = df_crypto["valeur_actuelle"].apply(
-                            lambda x: f"{x:,.0f}€".replace(",", " ")
+                            lambda x: f"{x:,.2f}€".replace(",", " ")
                         )
                         df_display["pnl_montant"] = df_crypto["pnl_montant"].apply(
-                            lambda x: f"{x:+,.0f}€".replace(",", " ")
+                            lambda x: f"{x:+,.2f}€".replace(",", " ")
                         )
                         df_display["pnl_pourcentage"] = df_crypto["pnl_pourcentage"].apply(
                             lambda x: f"{x:+.1f}%"
@@ -797,14 +797,14 @@ def main():
 
             with col1:
                 total_revenus = df_revenus["montant"].sum()
-                st.metric("Total des Revenus", f"{total_revenus:,.0f}€".replace(",", " "))
+                st.metric("Total des Revenus", f"{total_revenus:,.2f}€".replace(",", " "))
 
             with col2:
                 total_investissement_bourse = df_revenus["investissement_disponible_bourse"].sum()
                 total_investissement_crypto = df_revenus["investissement_disponible_crypto"].sum()
                 total_investissement = total_investissement_bourse + total_investissement_crypto
                 st.metric(
-                    "Total Budget Investissement", f"{total_investissement:,.0f}€".replace(",", " ")
+                    "Total Budget Investissement", f"{total_investissement:,.2f}€".replace(",", " ")
                 )
 
             with col3:
