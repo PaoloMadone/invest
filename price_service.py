@@ -336,7 +336,6 @@ class PriceService:
         except Exception as e:
             print(f"Erreur lors de la sauvegarde du mapping: {e}")
 
-
     def get_stock_price_with_choice(self, symbol: str) -> Tuple[Optional[float], Optional[List]]:
         """
         Récupère le prix d'une action avec possibilité de choix multiple

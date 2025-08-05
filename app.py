@@ -314,7 +314,6 @@ def main():
                 key="bourse_type_operation",
             )
 
-
             montant_bourse = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
@@ -594,7 +593,6 @@ def main():
                 "ou une conversion qui ne doit pas être déduit du budget",
                 key="crypto_hors_budget",
             )
-
 
             montant_crypto = st.number_input(
                 "Montant (€)",
