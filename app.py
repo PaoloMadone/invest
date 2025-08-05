@@ -184,15 +184,15 @@ def main():
 
     # Calculer les performances globales au chargement si nécessaire
     portfolio_summary = st.session_state.get("portfolio_summary")
-    
+
     # Ne calculer que si on n'a pas de résumé ET qu'on n'est pas en train de gérer des choix de symboles
     should_calculate_performance = (
-        not portfolio_summary 
+        not portfolio_summary
         and (data["bourse"] or data["crypto"])
         and not hasattr(st.session_state, "symbol_choices")
         and not hasattr(st.session_state, "pending_symbol")
     )
-    
+
     if should_calculate_performance:
         # Calculer sans spinner pour éviter les rerun intempestifs
         crypto_with_perf = (
@@ -217,7 +217,7 @@ def main():
 
         # Mettre en cache dans la session
         st.session_state.portfolio_summary = portfolio_summary
-        
+
         # Mettre aussi en cache les données individuelles pour les onglets
         if bourse_with_perf:
             bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
@@ -246,9 +246,11 @@ def main():
             # Calculer la valeur actuelle à partir des données individuelles si disponibles
             bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
             bourse_with_perf = st.session_state.get(bourse_cache_key)
-            
+
             if bourse_with_perf and any(inv.get("valeur_actuelle") for inv in bourse_with_perf):
-                valeur_actuelle_bourse = sum(inv.get("valeur_actuelle", inv["montant"]) for inv in bourse_with_perf)
+                valeur_actuelle_bourse = sum(
+                    inv.get("valeur_actuelle", inv["montant"]) for inv in bourse_with_perf
+                )
                 st.metric("Valeur Actuelle", f"{valeur_actuelle_bourse:,.2f}€".replace(",", " "))
             elif portfolio_summary and portfolio_summary["bourse"]["valeur_actuelle"] > 0:
                 valeur_actuelle_bourse = portfolio_summary["bourse"]["valeur_actuelle"]
@@ -257,9 +259,17 @@ def main():
                 st.metric("Valeur Actuelle", f"{total_investi_bourse:,.2f}€".replace(",", " "))
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
-            if bourse_with_perf and any(inv.get("pnl_montant") is not None for inv in bourse_with_perf):
-                pnl_bourse = sum(inv.get("pnl_montant", 0) for inv in bourse_with_perf if inv.get("pnl_montant") is not None)
-                pnl_pct_bourse = (pnl_bourse / total_investi_bourse * 100) if total_investi_bourse > 0 else 0
+            if bourse_with_perf and any(
+                inv.get("pnl_montant") is not None for inv in bourse_with_perf
+            ):
+                pnl_bourse = sum(
+                    inv.get("pnl_montant", 0)
+                    for inv in bourse_with_perf
+                    if inv.get("pnl_montant") is not None
+                )
+                pnl_pct_bourse = (
+                    (pnl_bourse / total_investi_bourse * 100) if total_investi_bourse > 0 else 0
+                )
                 st.metric(
                     "P&L Total",
                     f"{pnl_bourse:+,.2f}€".replace(",", " "),
@@ -554,9 +564,11 @@ def main():
             # Calculer la valeur actuelle à partir des données individuelles si disponibles
             crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
             crypto_with_perf = st.session_state.get(crypto_cache_key)
-            
+
             if crypto_with_perf and any(inv.get("valeur_actuelle") for inv in crypto_with_perf):
-                valeur_actuelle_crypto = sum(inv.get("valeur_actuelle", inv["montant"]) for inv in crypto_with_perf)
+                valeur_actuelle_crypto = sum(
+                    inv.get("valeur_actuelle", inv["montant"]) for inv in crypto_with_perf
+                )
                 st.metric("Valeur Actuelle", f"{valeur_actuelle_crypto:,.2f}€".replace(",", " "))
             elif portfolio_summary and portfolio_summary["crypto"]["valeur_actuelle"] > 0:
                 valeur_actuelle_crypto = portfolio_summary["crypto"]["valeur_actuelle"]
@@ -565,9 +577,17 @@ def main():
                 st.metric("Valeur Actuelle", f"{total_investi_crypto:,.2f}€".replace(",", " "))
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
-            if crypto_with_perf and any(inv.get("pnl_montant") is not None for inv in crypto_with_perf):
-                pnl_crypto = sum(inv.get("pnl_montant", 0) for inv in crypto_with_perf if inv.get("pnl_montant") is not None)
-                pnl_pct_crypto = (pnl_crypto / total_investi_crypto * 100) if total_investi_crypto > 0 else 0
+            if crypto_with_perf and any(
+                inv.get("pnl_montant") is not None for inv in crypto_with_perf
+            ):
+                pnl_crypto = sum(
+                    inv.get("pnl_montant", 0)
+                    for inv in crypto_with_perf
+                    if inv.get("pnl_montant") is not None
+                )
+                pnl_pct_crypto = (
+                    (pnl_crypto / total_investi_crypto * 100) if total_investi_crypto > 0 else 0
+                )
                 st.metric(
                     "P&L Total",
                     f"{pnl_crypto:+,.2f}€".replace(",", " "),
@@ -860,26 +880,24 @@ def main():
             # Section Performances
             if portfolio_summary:
                 st.subheader("📊 Performances du Portfolio")
-                
+
                 col1, col2, col3, col4 = st.columns(4)
-                
+
                 with col1:
                     total_investi = portfolio_summary["total"]["valeur_initiale"]
                     st.metric("Total Investi", f"{total_investi:,.2f}€".replace(",", " "))
-                
+
                 with col2:
                     valeur_actuelle = portfolio_summary["total"]["valeur_actuelle"]
                     st.metric("Valeur Actuelle", f"{valeur_actuelle:,.2f}€".replace(",", " "))
-                
+
                 with col3:
                     pnl_montant = portfolio_summary["total"]["pnl_montant"]
                     st.metric("P&L €", f"{pnl_montant:+,.2f}€".replace(",", " "))
-                
+
                 with col4:
                     pnl_pct = portfolio_summary["total"]["pnl_pourcentage"]
                     st.metric("P&L %", f"{pnl_pct:+.1f}%")
-
-
 
         else:
             st.info("Aucun investissement enregistré pour le moment")
