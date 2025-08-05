@@ -344,53 +344,6 @@ def main():
                 "Prix unitaire (€)", min_value=0.0, value=None, step=0.01, key="bourse_prix"
             )
 
-            # Interface de choix si plusieurs options trouvées
-            if hasattr(st.session_state, "symbol_choices") and st.session_state.symbol_choices:
-                st.subheader(f"Choisir le symbole pour '{st.session_state.pending_symbol}':")
-
-                choices = st.session_state.symbol_choices
-                choice_labels = []
-
-                for i, (variant, price, market, company) in enumerate(choices):
-                    label = f"{variant} ({market}) - {company} - {price:.2f}€"
-                    choice_labels.append(label)
-
-                selected_choice = st.radio(
-                    "Symboles trouvés:",
-                    options=range(len(choices)),
-                    format_func=lambda x: choice_labels[x],
-                    key="symbol_choice_radio",
-                )
-
-                col_choose, col_cancel = st.columns(2)
-
-                with col_choose:
-                    if st.button("✅ Utiliser ce symbole", key="confirm_choice"):
-                        chosen_variant, chosen_price, chosen_market, chosen_company = choices[
-                            selected_choice
-                        ]
-
-                        # Sauvegarder le choix
-                        final_price = st.session_state.price_service.save_user_choice(
-                            st.session_state.pending_symbol, chosen_variant, chosen_company
-                        )
-
-                        if final_price:
-                            st.success(
-                                f"💾 Choix sauvegardé ! {st.session_state.pending_symbol} → "
-                                f"{chosen_variant} ({final_price:.2f}€)"
-                            )
-
-                        # Nettoyer les variables de session
-                        del st.session_state.symbol_choices
-                        del st.session_state.pending_symbol
-                        st.rerun()
-
-                with col_cancel:
-                    if st.button("❌ Annuler", key="cancel_choice"):
-                        del st.session_state.symbol_choices
-                        del st.session_state.pending_symbol
-                        st.rerun()
 
             if st.button("Ajouter Investissement Bourse"):
                 if symbole_bourse and (montant_bourse or 0) > 0 and (prix_unitaire_bourse or 0) > 0:
@@ -423,13 +376,13 @@ def main():
                 # Calculer les performances avec prix actuels seulement si nécessaire
                 bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
                 if bourse_cache_key not in st.session_state:
-                    # Pas de spinner pour éviter les reruns intempestifs
-                    bourse_with_perf = (
-                        st.session_state.price_service.calculate_investment_performance(
-                            data["bourse"], "bourse"
+                    with st.spinner("Récupération des prix actuels..."):
+                        bourse_with_perf = (
+                            st.session_state.price_service.calculate_investment_performance(
+                                data["bourse"], "bourse"
+                            )
                         )
-                    )
-                    st.session_state[bourse_cache_key] = bourse_with_perf
+                        st.session_state[bourse_cache_key] = bourse_with_perf
                 else:
                     bourse_with_perf = st.session_state[bourse_cache_key]
 
