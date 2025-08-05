@@ -168,6 +168,21 @@ class PriceService:
         if asset_type.lower() == "crypto":
             return self.get_crypto_price(symbol)
         elif asset_type.lower() == "bourse":
+            # Vérifier d'abord le mapping pour les symboles existants
+            learned_symbol = self._get_learned_mapping(symbol)
+            if learned_symbol:
+                try:
+                    ticker = yf.Ticker(learned_symbol)
+                    hist = ticker.history(period="2d")
+                    if not hist.empty:
+                        price = float(hist["Close"].iloc[-1])
+                        # Mettre en cache
+                        self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
+                        return price
+                except Exception:
+                    pass
+            
+            # Sinon, utiliser la méthode normale
             return self.get_stock_price(symbol)
         else:
             return None
@@ -379,12 +394,16 @@ class PriceService:
             # 1. Vérifier les mappings appris
             learned_symbol = self._get_learned_mapping(symbol)
             if learned_symbol:
-                ticker = yf.Ticker(learned_symbol)
-                hist = ticker.history(period="2d")
-                if not hist.empty:
-                    price = float(hist["Close"].iloc[-1])
-                    self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                    return price, None
+                try:
+                    ticker = yf.Ticker(learned_symbol)
+                    hist = ticker.history(period="2d")
+                    if not hist.empty:
+                        price = float(hist["Close"].iloc[-1])
+                        self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
+                        print(f"✅ Mapping trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)")
+                        return price, None
+                except Exception:
+                    print(f"❌ Erreur avec le mapping {symbol} -> {learned_symbol}")
 
             # 2. Rechercher toutes les variantes
             variants = self._find_multiple_variants(symbol.upper())
