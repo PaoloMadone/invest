@@ -302,10 +302,14 @@ class PriceService:
 
     def _get_learned_mapping(self, symbol: str) -> Optional[str]:
         """Récupère un mapping appris depuis Supabase"""
+        import streamlit as st
+
         if not self.supabase:
+            st.write(f"🔍 Pas de client Supabase pour {symbol}")
             return None
 
         try:
+            st.write(f"🔍 Recherche mapping pour: {symbol.upper()}")
             result = (
                 self.supabase.table("symbol_mappings")
                 .select("yahoo_symbol")
@@ -313,9 +317,13 @@ class PriceService:
                 .execute()
             )
             if result.data:
-                return result.data[0]["yahoo_symbol"]
+                yahoo_symbol = result.data[0]["yahoo_symbol"]
+                st.write(f"✅ Mapping trouvé: {symbol.upper()} -> {yahoo_symbol}")
+                return yahoo_symbol
+            else:
+                st.write(f"❌ Aucun mapping trouvé pour: {symbol.upper()}")
         except Exception as e:
-            print(f"Erreur lors de la récupération du mapping pour {symbol}: {e}")
+            st.error(f"Erreur lors de la récupération du mapping pour {symbol}: {e}")
         return None
 
     def _save_learned_mapping(self, user_symbol: str, yahoo_symbol: str, company_name: str = None):
