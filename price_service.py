@@ -181,7 +181,7 @@ class PriceService:
                         return price
                 except Exception:
                     pass
-            
+
             # Sinon, utiliser la méthode normale
             return self.get_stock_price(symbol)
         else:
@@ -400,7 +400,9 @@ class PriceService:
                     if not hist.empty:
                         price = float(hist["Close"].iloc[-1])
                         self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                        print(f"✅ Mapping trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)")
+                        print(
+                            f"✅ Mapping trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
+                        )
                         return price, None
                 except Exception:
                     print(f"❌ Erreur avec le mapping {symbol} -> {learned_symbol}")
