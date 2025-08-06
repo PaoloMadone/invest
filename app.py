@@ -550,6 +550,173 @@ def main():
             else:
                 st.info("Aucun investissement bourse enregistré")
 
+        # Section Deep Dive - en dehors des colonnes pour être centrée
+        if data["bourse"]:
+            st.markdown("---")
+            
+            # Section Deep Dive
+            st.subheader("📊 Deep Dive")
+            
+            # Récupérer les symboles uniques
+            symboles_uniques = sorted(list(set([inv["symbole"] for inv in data["bourse"]])))
+            
+            symbole_selected = st.selectbox(
+                "Sélectionner un titre pour analyse détaillée",
+                options=symboles_uniques,
+                index=None,
+                placeholder="-- Choisir un titre --"
+            )
+            
+            if symbole_selected:
+                # Récupérer les données de performance si disponibles
+                bourse_cache_key = f"bourse_perf_{len(data['bourse'])}"
+                bourse_with_perf = st.session_state.get(bourse_cache_key)
+                
+                # Filtrer les investissements pour ce symbole
+                investissements_symbole = [inv for inv in data["bourse"] if inv["symbole"] == symbole_selected]
+                
+                if bourse_with_perf:
+                    perf_symbole = [inv for inv in bourse_with_perf if inv["symbole"] == symbole_selected]
+                else:
+                    perf_symbole = investissements_symbole
+                
+                # Calculer les statistiques
+                total_quantite = sum([inv["quantite"] for inv in investissements_symbole])
+                total_investi_symbole = sum([inv["montant"] for inv in investissements_symbole])
+                prix_moyen_achat = total_investi_symbole / total_quantite if total_quantite > 0 else 0
+                
+                # Afficher les métriques
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Quantité totale", f"{total_quantite:.4f}")
+                
+                with col2:
+                    st.metric("Total investi", f"{total_investi_symbole:,.2f}€".replace(",", " "))
+                
+                with col3:
+                    st.metric("Prix moyen d'achat", f"{prix_moyen_achat:,.2f}€".replace(",", " "))
+                
+                with col4:
+                    if perf_symbole and any(inv.get("prix_actuel") for inv in perf_symbole):
+                        prix_actuel = next((inv["prix_actuel"] for inv in perf_symbole if inv.get("prix_actuel")), 0)
+                        st.metric("Prix actuel", f"{prix_actuel:,.2f}€".replace(",", " "))
+                    else:
+                        st.metric("Prix actuel", "N/A")
+                
+                # Performance globale du titre
+                if perf_symbole and any(inv.get("valeur_actuelle") for inv in perf_symbole):
+                    valeur_actuelle_symbole = sum([inv.get("valeur_actuelle", inv["montant"]) for inv in perf_symbole])
+                    pnl_symbole = valeur_actuelle_symbole - total_investi_symbole
+                    pnl_pct_symbole = (pnl_symbole / total_investi_symbole * 100) if total_investi_symbole > 0 else 0
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.metric("Valeur actuelle", f"{valeur_actuelle_symbole:,.2f}€".replace(",", " "))
+                    
+                    with col2:
+                        st.metric("P&L €", f"{pnl_symbole:+,.2f}€".replace(",", " "))
+                    
+                    with col3:
+                        st.metric("P&L %", f"{pnl_pct_symbole:+.1f}%")
+                
+                # Tableau détaillé des transactions
+                st.subheader(f"Historique des transactions - {symbole_selected}")
+                
+                df_symbole = pd.DataFrame(perf_symbole)
+                df_symbole["date"] = pd.to_datetime(df_symbole["date"]).dt.date
+                
+                # Préparer les colonnes d'affichage
+                colonnes_base = ["date", "quantite", "prix_unitaire", "montant"]
+                
+                # Ajouter type_operation si disponible
+                if "type_operation" in df_symbole.columns:
+                    colonnes_base.insert(1, "type_operation")
+                
+                df_display_symbole = df_symbole[colonnes_base].copy()
+                
+                # Formatage
+                df_display_symbole["montant"] = df_display_symbole["montant"].apply(
+                    lambda x: f"{x:,.2f}€".replace(",", " ")
+                )
+                df_display_symbole["prix_unitaire"] = df_display_symbole["prix_unitaire"].apply(
+                    lambda x: f"{x:,.2f}€".replace(",", " ")
+                )
+                df_display_symbole["quantite"] = df_display_symbole["quantite"].apply(lambda x: f"{x:.4f}")
+                
+                # Ajouter les colonnes de performance si disponibles
+                if (
+                    "prix_actuel" in df_symbole.columns
+                    and "pnl_montant" in df_symbole.columns
+                    and "pnl_pourcentage" in df_symbole.columns
+                ):
+                    df_display_symbole["prix_actuel"] = df_symbole["prix_actuel"].apply(
+                        lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
+                    )
+                    df_display_symbole["valeur_actuelle"] = df_symbole["valeur_actuelle"].apply(
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
+                    )
+                    df_display_symbole["pnl_montant"] = df_symbole["pnl_montant"].apply(
+                        lambda x: f"{x:+,.2f}€".replace(",", " ")
+                    )
+                    df_display_symbole["pnl_pourcentage"] = df_symbole["pnl_pourcentage"].apply(
+                        lambda x: f"{x:+.1f}%"
+                    )
+                    
+                    # Renommer les colonnes
+                    if "type_operation" in df_symbole.columns:
+                        df_display_symbole.columns = [
+                            "Date",
+                            "Type",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                            "Prix Actuel",
+                            "Valeur Actuelle",
+                            "P&L €",
+                            "P&L %",
+                        ]
+                    else:
+                        df_display_symbole.columns = [
+                            "Date",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                            "Prix Actuel",
+                            "Valeur Actuelle",
+                            "P&L €",
+                            "P&L %",
+                        ]
+                    
+                    # Appliquer le style conditionnel
+                    def color_pnl(val):
+                        if "+" in str(val):
+                            return "color: green"
+                        elif "-" in str(val):
+                            return "color: red"
+                        return ""
+                    
+                    styled_df_symbole = df_display_symbole.style.map(color_pnl, subset=["P&L €", "P&L %"])
+                    st.dataframe(styled_df_symbole, use_container_width=True)
+                else:
+                    if "type_operation" in df_symbole.columns:
+                        df_display_symbole.columns = [
+                            "Date",
+                            "Type",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                        ]
+                    else:
+                        df_display_symbole.columns = [
+                            "Date",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                        ]
+                    st.dataframe(df_display_symbole, use_container_width=True)
+
     with tab_crypto:
         st.header("Investissements Crypto")
 
