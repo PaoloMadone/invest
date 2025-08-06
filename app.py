@@ -1,9 +1,10 @@
 import json
 import math
 import os
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 from dotenv import load_dotenv
 from supabase import Client, create_client
@@ -646,8 +647,6 @@ def main():
 
                 # Créer le graphique seulement si on a des données de prix
                 if perf_symbole and any(inv.get("prix_actuel") for inv in perf_symbole):
-                    import plotly.graph_objects as go
-                    from datetime import datetime
 
                     # Préparer les données pour le graphique
                     dates_achat = [
