@@ -641,6 +641,72 @@ def main():
                 with col3:
                     st.metric("Quantité totale", f"{total_quantite:.4f}")
 
+                # Graphique d'évolution du prix avec points d'achat
+                st.subheader(f"📈 Évolution du prix - {symbole_selected}")
+                
+                # Créer le graphique seulement si on a des données de prix
+                if perf_symbole and any(inv.get("prix_actuel") for inv in perf_symbole):
+                    import plotly.graph_objects as go
+                    from datetime import datetime
+                    
+                    # Préparer les données pour le graphique
+                    dates_achat = [datetime.strptime(inv["date"], "%Y-%m-%d") for inv in investissements_symbole]
+                    prix_achat = [inv["prix_unitaire"] for inv in investissements_symbole]
+                    montants_achat = [inv["montant"] for inv in investissements_symbole]
+                    
+                    # Prix actuel (on prend le premier disponible)
+                    prix_actuel = next((inv["prix_actuel"] for inv in perf_symbole if inv.get("prix_actuel")), 0)
+                    
+                    fig = go.Figure()
+                    
+                    # Ligne horizontale pour le prix actuel
+                    fig.add_hline(
+                        y=prix_actuel, 
+                        line_dash="dash", 
+                        line_color="blue",
+                        annotation_text=f"Prix actuel: {prix_actuel:,.2f}€".replace(",", " "),
+                        annotation_position="bottom right"
+                    )
+                    
+                    # Points d'achat
+                    fig.add_trace(go.Scatter(
+                        x=dates_achat,
+                        y=prix_achat,
+                        mode='markers',
+                        marker=dict(
+                            size=15,  # Taille fixe pour tous les points
+                            color='red',
+                            symbol='circle',
+                            line=dict(width=2, color='darkred')
+                        ),
+                        name='Achats',
+                        text=[f"Date: {date.strftime('%d/%m/%Y')}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(",", " ") 
+                              for date, prix, montant in zip(dates_achat, prix_achat, montants_achat)],
+                        hovertemplate='%{text}<extra></extra>'
+                    ))
+                    
+                    # Ligne du prix moyen d'achat
+                    fig.add_hline(
+                        y=prix_moyen_achat,
+                        line_dash="dot",
+                        line_color="green",
+                        annotation_text=f"Prix moyen d'achat: {prix_moyen_achat:,.2f}€".replace(",", " "),
+                        annotation_position="top right"
+                    )
+                    
+                    fig.update_layout(
+                        title=f"Évolution des prix d'achat - {symbole_selected}",
+                        xaxis_title="Date",
+                        yaxis_title="Prix (€)",
+                        hovermode='closest',
+                        showlegend=True,
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("Graphique non disponible - prix actuels non récupérés")
+
                 # Tableau détaillé des transactions
                 st.subheader(f"Historique des transactions - {symbole_selected}")
 
