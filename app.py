@@ -164,24 +164,6 @@ def main():
     total_investi_reel = total_investi_bourse + total_investi_crypto
     total_restant = budget_restant_bourse + budget_restant_crypto
 
-    # Bouton pour actualiser les prix
-    col_refresh, col_empty = st.columns([1, 5])
-    with col_refresh:
-        if st.button("🔄 Actualiser les prix"):
-            st.session_state.price_service.clear_cache()
-            # Vider aussi le cache des performances
-            if "portfolio_summary" in st.session_state:
-                del st.session_state.portfolio_summary
-            if "bourse_data_processed" in st.session_state:
-                del st.session_state.bourse_data_processed
-            if "crypto_data_processed" in st.session_state:
-                del st.session_state.crypto_data_processed
-            # Vider les caches des onglets individuels
-            for key in list(st.session_state.keys()):
-                if key.startswith("bourse_perf_") or key.startswith("crypto_perf_"):
-                    del st.session_state[key]
-            st.rerun()
-
     # Calculer les performances globales au chargement si nécessaire
     portfolio_summary = st.session_state.get("portfolio_summary")
 
@@ -225,6 +207,25 @@ def main():
         if crypto_with_perf:
             crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
             st.session_state[crypto_cache_key] = crypto_with_perf
+
+    # Bouton pour actualiser les prix - affiché seulement après le calcul des performances OU s'il n'y a pas d'investissements
+    if portfolio_summary or not (data["bourse"] or data["crypto"]):
+        col_refresh, col_empty = st.columns([1, 5])
+        with col_refresh:
+            if st.button("🔄 Actualiser les prix"):
+                st.session_state.price_service.clear_cache()
+                # Vider aussi le cache des performances
+                if "portfolio_summary" in st.session_state:
+                    del st.session_state.portfolio_summary
+                if "bourse_data_processed" in st.session_state:
+                    del st.session_state.bourse_data_processed
+                if "crypto_data_processed" in st.session_state:
+                    del st.session_state.crypto_data_processed
+                # Vider les caches des onglets individuels
+                for key in list(st.session_state.keys()):
+                    if key.startswith("bourse_perf_") or key.startswith("crypto_perf_"):
+                        del st.session_state[key]
+                st.rerun()
 
     # Tabs pour Bourse et Crypto
     tab_revenus, tab_bourse, tab_crypto, tab_overview = st.tabs(
