@@ -616,10 +616,10 @@ def main():
                         st.metric("Valeur actuelle", f"{valeur_actuelle_symbole:,.2f}€".replace(",", " "))
                     
                     with col2:
-                        st.metric("P&L €", f"{pnl_symbole:+,.2f}€".replace(",", " "))
+                        st.metric("P&L €", "", delta=f"{pnl_symbole:+,.2f}€".replace(",", " "))
                     
                     with col3:
-                        st.metric("P&L %", f"{pnl_pct_symbole:+.1f}%")
+                        st.metric("P&L %", "", delta=f"{pnl_pct_symbole:+.1f}%")
                 
                 # Tableau détaillé des transactions
                 st.subheader(f"Historique des transactions - {symbole_selected}")
