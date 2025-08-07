@@ -694,7 +694,7 @@ def main():
                                 y=prix_type,
                                 mode="markers",
                                 marker=dict(
-                                    size=15,  # Taille fixe pour tous les points
+                                    size=7.5,  # Taille réduite de moitié
                                     color=color,
                                     symbol="circle",
                                     line=dict(width=2, color=color),
@@ -1199,7 +1199,7 @@ def main():
                             y=prix_achat_crypto,
                             mode="markers",
                             marker=dict(
-                                size=15,
+                                size=7.5,
                                 color="#FF6B35",
                                 symbol="circle",
                                 line=dict(width=2, color="#FF6B35"),
