@@ -561,12 +561,23 @@ def main():
             # Récupérer les symboles uniques
             symboles_uniques = sorted(list(set([inv["symbole"] for inv in data["bourse"]])))
 
+            # Récupérer la sélection précédente si elle existe
+            default_index = None
+            if "bourse_deep_dive_symbol" in st.session_state:
+                previous_symbol = st.session_state.bourse_deep_dive_symbol
+                if previous_symbol in symboles_uniques:
+                    default_index = symboles_uniques.index(previous_symbol)
+            
             symbole_selected = st.selectbox(
                 "Sélectionner un titre pour analyse détaillée",
                 options=symboles_uniques,
-                index=None,
+                index=default_index,
                 placeholder="-- Choisir un titre --",
             )
+            
+            # Sauvegarder la sélection dans session_state
+            if symbole_selected:
+                st.session_state.bourse_deep_dive_symbol = symbole_selected
 
             if symbole_selected:
                 # Récupérer les données de performance si disponibles
@@ -1118,13 +1129,24 @@ def main():
             # Récupérer les symboles uniques
             symboles_uniques_crypto = sorted(list(set([inv["symbole"] for inv in data["crypto"]])))
 
+            # Récupérer la sélection précédente si elle existe
+            default_index_crypto = None
+            if "crypto_deep_dive_symbol" in st.session_state:
+                previous_symbol_crypto = st.session_state.crypto_deep_dive_symbol
+                if previous_symbol_crypto in symboles_uniques_crypto:
+                    default_index_crypto = symboles_uniques_crypto.index(previous_symbol_crypto)
+            
             symbole_selected_crypto = st.selectbox(
                 "Sélectionner une crypto pour analyse détaillée",
                 options=symboles_uniques_crypto,
-                index=None,
+                index=default_index_crypto,
                 placeholder="-- Choisir une crypto --",
                 key="crypto_deep_dive_select",
             )
+            
+            # Sauvegarder la sélection dans session_state
+            if symbole_selected_crypto:
+                st.session_state.crypto_deep_dive_symbol = symbole_selected_crypto
 
             if symbole_selected_crypto:
                 # Récupérer les données de performance si disponibles
