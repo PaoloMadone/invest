@@ -1070,6 +1070,251 @@ def main():
             else:
                 st.info("Aucun investissement crypto enregistré")
 
+        # Section Deep Dive - en dehors des colonnes pour être centrée
+        if data["crypto"]:
+            st.markdown("---")
+
+            # Section Deep Dive
+            st.subheader("📊 Deep Dive")
+
+            # Récupérer les symboles uniques
+            symboles_uniques_crypto = sorted(list(set([inv["symbole"] for inv in data["crypto"]])))
+
+            symbole_selected_crypto = st.selectbox(
+                "Sélectionner une crypto pour analyse détaillée",
+                options=symboles_uniques_crypto,
+                index=None,
+                placeholder="-- Choisir une crypto --",
+                key="crypto_deep_dive_select",
+            )
+
+            if symbole_selected_crypto:
+                # Récupérer les données de performance si disponibles
+                crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
+                crypto_with_perf = st.session_state.get(crypto_cache_key)
+
+                # Filtrer les investissements pour ce symbole
+                investissements_symbole_crypto = [
+                    inv for inv in data["crypto"] if inv["symbole"] == symbole_selected_crypto
+                ]
+
+                if crypto_with_perf:
+                    perf_symbole_crypto = [
+                        inv for inv in crypto_with_perf if inv["symbole"] == symbole_selected_crypto
+                    ]
+                else:
+                    perf_symbole_crypto = investissements_symbole_crypto
+
+                # Calculer les statistiques
+                total_quantite_crypto = sum([inv["quantite"] for inv in investissements_symbole_crypto])
+                total_investi_symbole_crypto = sum([inv["montant"] for inv in investissements_symbole_crypto])
+                prix_moyen_achat_crypto = (
+                    total_investi_symbole_crypto / total_quantite_crypto if total_quantite_crypto > 0 else 0
+                )
+
+                # Performance globale du titre
+                if perf_symbole_crypto and any(inv.get("valeur_actuelle") for inv in perf_symbole_crypto):
+                    valeur_actuelle_symbole_crypto = sum(
+                        [inv.get("valeur_actuelle", inv["montant"]) for inv in perf_symbole_crypto]
+                    )
+                    pnl_symbole_crypto = valeur_actuelle_symbole_crypto - total_investi_symbole_crypto
+                    pnl_pct_symbole_crypto = (
+                        (pnl_symbole_crypto / total_investi_symbole_crypto * 100)
+                        if total_investi_symbole_crypto > 0
+                        else 0
+                    )
+
+                    # Première ligne : Métriques principales
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    with col1:
+                        st.metric(
+                            "Total investi", f"{total_investi_symbole_crypto:,.2f}€".replace(",", " ")
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Valeur actuelle", f"{valeur_actuelle_symbole_crypto:,.2f}€".replace(",", " ")
+                        )
+
+                    with col3:
+                        st.metric("P&L %", "", delta=f"{pnl_pct_symbole_crypto:+.1f}%")
+
+                    with col4:
+                        st.metric("P&L €", "", delta=f"{pnl_symbole_crypto:+,.2f}€".replace(",", " "))
+
+                # Deuxième ligne : Les métriques de détail
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    if perf_symbole_crypto and any(inv.get("prix_actuel") for inv in perf_symbole_crypto):
+                        prix_actuel_crypto = next(
+                            (inv["prix_actuel"] for inv in perf_symbole_crypto if inv.get("prix_actuel")),
+                            0,
+                        )
+                        st.metric("Prix actuel", f"{prix_actuel_crypto:,.2f}€".replace(",", " "))
+                    else:
+                        st.metric("Prix actuel", "N/A")
+
+                with col2:
+                    st.metric("Prix moyen d'achat", f"{prix_moyen_achat_crypto:,.2f}€".replace(",", " "))
+
+                with col3:
+                    st.metric("Quantité totale", f"{total_quantite_crypto:.8f}")
+
+                # Graphique d'évolution du prix avec points d'achat
+                st.subheader(f"📈 Évolution du prix - {symbole_selected_crypto}")
+
+                # Créer le graphique seulement si on a des données de prix
+                if perf_symbole_crypto and any(inv.get("prix_actuel") for inv in perf_symbole_crypto):
+
+                    # Préparer les données pour le graphique
+                    dates_achat_crypto = [
+                        datetime.strptime(inv["date"], "%Y-%m-%d")
+                        for inv in investissements_symbole_crypto
+                    ]
+                    prix_achat_crypto = [inv["prix_unitaire"] for inv in investissements_symbole_crypto]
+                    montants_achat_crypto = [inv["montant"] for inv in investissements_symbole_crypto]
+
+                    # Prix actuel (on prend le premier disponible)
+                    prix_actuel_crypto = next(
+                        (inv["prix_actuel"] for inv in perf_symbole_crypto if inv.get("prix_actuel")), 0
+                    )
+
+                    fig_crypto = go.Figure()
+
+                    # Ligne horizontale pour le prix actuel
+                    fig_crypto.add_hline(
+                        y=prix_actuel_crypto,
+                        line_dash="dash",
+                        line_color="blue",
+                        annotation_text=f"Prix actuel: {prix_actuel_crypto:,.2f}€".replace(",", " "),
+                        annotation_position="bottom right",
+                    )
+
+                    # Points d'achat
+                    fig_crypto.add_trace(
+                        go.Scatter(
+                            x=dates_achat_crypto,
+                            y=prix_achat_crypto,
+                            mode="markers",
+                            marker=dict(
+                                size=15,
+                                color="#FF6B35",
+                                symbol="circle",
+                                line=dict(width=2, color="#FF6B35"),
+                            ),
+                            name="Achats",
+                            text=[
+                                f"Date: {date.strftime('%d/%m/%Y')}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(
+                                    ",", " "
+                                )
+                                for date, prix, montant in zip(
+                                    dates_achat_crypto, prix_achat_crypto, montants_achat_crypto
+                                )
+                            ],
+                            hovertemplate="%{text}<extra></extra>",
+                        )
+                    )
+
+                    # Ligne du prix moyen d'achat
+                    fig_crypto.add_hline(
+                        y=prix_moyen_achat_crypto,
+                        line_dash="dot",
+                        line_color="green",
+                        annotation_text=f"Prix moyen d'achat: {prix_moyen_achat_crypto:,.2f}€".replace(
+                            ",", " "
+                        ),
+                        annotation_position="top right",
+                    )
+
+                    fig_crypto.update_layout(
+                        title=f"Évolution des prix d'achat - {symbole_selected_crypto}",
+                        xaxis_title="Date",
+                        yaxis_title="Prix (€)",
+                        hovermode="closest",
+                        showlegend=True,
+                        height=400,
+                    )
+
+                    st.plotly_chart(fig_crypto, use_container_width=True)
+                else:
+                    st.info("Graphique non disponible - prix actuels non récupérés")
+
+                # Tableau détaillé des transactions
+                st.subheader(f"Historique des transactions - {symbole_selected_crypto}")
+
+                df_symbole_crypto = pd.DataFrame(perf_symbole_crypto)
+                df_symbole_crypto["date"] = pd.to_datetime(df_symbole_crypto["date"]).dt.strftime('%d/%m/%Y')
+
+                # Préparer les colonnes d'affichage
+                colonnes_base_crypto = ["date", "quantite", "prix_unitaire", "montant"]
+
+                df_display_symbole_crypto = df_symbole_crypto[colonnes_base_crypto].copy()
+
+                # Formatage
+                df_display_symbole_crypto["montant"] = df_display_symbole_crypto["montant"].apply(
+                    lambda x: f"{x:,.2f}€".replace(",", " ")
+                )
+                df_display_symbole_crypto["prix_unitaire"] = df_display_symbole_crypto["prix_unitaire"].apply(
+                    lambda x: f"{x:,.2f}€".replace(",", " ")
+                )
+                df_display_symbole_crypto["quantite"] = df_display_symbole_crypto["quantite"].apply(
+                    lambda x: f"{x:.8f}"
+                )
+
+                # Ajouter les colonnes de performance si disponibles
+                if (
+                    "prix_actuel" in df_symbole_crypto.columns
+                    and "pnl_montant" in df_symbole_crypto.columns
+                    and "pnl_pourcentage" in df_symbole_crypto.columns
+                ):
+                    df_display_symbole_crypto["prix_actuel"] = df_symbole_crypto["prix_actuel"].apply(
+                        lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
+                    )
+                    df_display_symbole_crypto["valeur_actuelle"] = df_symbole_crypto["valeur_actuelle"].apply(
+                        lambda x: f"{x:,.2f}€".replace(",", " ")
+                    )
+                    df_display_symbole_crypto["pnl_montant"] = df_symbole_crypto["pnl_montant"].apply(
+                        lambda x: f"{x:+,.2f}€".replace(",", " ")
+                    )
+                    df_display_symbole_crypto["pnl_pourcentage"] = df_symbole_crypto["pnl_pourcentage"].apply(
+                        lambda x: f"{x:+.1f}%"
+                    )
+
+                    # Renommer les colonnes
+                    df_display_symbole_crypto.columns = [
+                        "Date",
+                        "Quantité",
+                        "Prix Achat",
+                        "Investi",
+                        "Prix Actuel",
+                        "Valeur Actuelle",
+                        "P&L €",
+                        "P&L %",
+                    ]
+
+                    # Appliquer le style conditionnel
+                    def color_pnl_crypto(val):
+                        if "+" in str(val):
+                            return "color: green"
+                        elif "-" in str(val):
+                            return "color: red"
+                        return ""
+
+                    styled_df_symbole_crypto = df_display_symbole_crypto.style.map(
+                        color_pnl_crypto, subset=["P&L €", "P&L %"]
+                    )
+                    st.dataframe(styled_df_symbole_crypto, use_container_width=True)
+                else:
+                    df_display_symbole_crypto.columns = [
+                        "Date",
+                        "Quantité",
+                        "Prix Achat",
+                        "Investi",
+                    ]
+                    st.dataframe(df_display_symbole_crypto, use_container_width=True)
+
     with tab_revenus:
         st.header("Historique des Revenus")
 
