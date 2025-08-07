@@ -941,6 +941,15 @@ def main():
                 key="crypto_hors_budget",
             )
 
+            # Type d'opération
+            type_operation_crypto = st.selectbox(
+                "Type d'opération",
+                options=["Achat", "RoundUP", "SaveBack"],
+                index=0,
+                help="Sélectionnez le type d'opération (achat normal, roundup, ou autre)",
+                key="crypto_type_operation",
+            )
+
             montant_crypto = st.number_input(
                 "Montant (€)",
                 min_value=0.0,
@@ -966,6 +975,7 @@ def main():
                                 "prix_unitaire": prix_unitaire_crypto,
                                 "quantite": quantite,
                                 "hors_budget": hors_budget_crypto,
+                                "type_operation": type_operation_crypto,
                             }
                         ).execute()
 
@@ -999,9 +1009,13 @@ def main():
                     df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.strftime("%d/%m/%Y")
 
                     # Préparer les colonnes d'affichage
-                    df_display = df_crypto[
-                        ["date", "symbole", "quantite", "prix_unitaire", "montant"]
-                    ].copy()
+                    colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
+                    
+                    # Ajouter type_operation si disponible
+                    if "type_operation" in df_crypto.columns:
+                        colonnes_base.insert(2, "type_operation")
+                    
+                    df_display = df_crypto[colonnes_base].copy()
 
                     # Formatage de base d'abord
                     df_display["montant"] = df_display["montant"].apply(
@@ -1033,17 +1047,31 @@ def main():
                         )
 
                         # Renommer les colonnes d'abord
-                        df_display.columns = [
-                            "Date",
-                            "Symbole",
-                            "Quantité",
-                            "Prix Achat",
-                            "Investi",
-                            "Prix Actuel",
-                            "Valeur Actuelle",
-                            "P&L €",
-                            "P&L %",
-                        ]
+                        if "type_operation" in df_crypto.columns:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Type",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                                "Prix Actuel",
+                                "Valeur Actuelle",
+                                "P&L €",
+                                "P&L %",
+                            ]
+                        else:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                                "Prix Actuel",
+                                "Valeur Actuelle",
+                                "P&L €",
+                                "P&L %",
+                            ]
 
                         # Appliquer un style conditionnel pour les P&L
                         def color_pnl(val):
@@ -1057,13 +1085,23 @@ def main():
                         styled_df = df_display.style.map(color_pnl, subset=["P&L €", "P&L %"])
                         st.dataframe(styled_df, use_container_width=True)
                     else:
-                        df_display.columns = [
-                            "Date",
-                            "Symbole",
-                            "Quantité",
-                            "Prix Achat",
-                            "Investi",
-                        ]
+                        if "type_operation" in df_crypto.columns:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Type",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                            ]
+                        else:
+                            df_display.columns = [
+                                "Date",
+                                "Symbole",
+                                "Quantité",
+                                "Prix Achat",
+                                "Investi",
+                            ]
                         st.dataframe(df_display, use_container_width=True)
                         st.warning("Impossible de récupérer les prix actuels")
 
@@ -1175,6 +1213,9 @@ def main():
                     ]
                     prix_achat_crypto = [inv["prix_unitaire"] for inv in investissements_symbole_crypto]
                     montants_achat_crypto = [inv["montant"] for inv in investissements_symbole_crypto]
+                    types_operation_crypto = [
+                        inv.get("type_operation", "Achat") for inv in investissements_symbole_crypto
+                    ]
 
                     # Prix actuel (on prend le premier disponible)
                     prix_actuel_crypto = next(
@@ -1192,30 +1233,42 @@ def main():
                         annotation_position="bottom right",
                     )
 
-                    # Points d'achat
-                    fig_crypto.add_trace(
-                        go.Scatter(
-                            x=dates_achat_crypto,
-                            y=prix_achat_crypto,
-                            mode="markers",
-                            marker=dict(
-                                size=7.5,
-                                color="#FF6B35",
-                                symbol="circle",
-                                line=dict(width=2, color="#FF6B35"),
-                            ),
-                            name="Achats",
-                            text=[
-                                f"Date: {date.strftime('%d/%m/%Y')}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(
-                                    ",", " "
-                                )
-                                for date, prix, montant in zip(
-                                    dates_achat_crypto, prix_achat_crypto, montants_achat_crypto
-                                )
-                            ],
-                            hovertemplate="%{text}<extra></extra>",
+                    # Séparer les données par type d'opération
+                    types_uniques_crypto = list(set(types_operation_crypto))
+                    colors_crypto = {"Achat": "#FF6B35", "RoundUP": "#D97706", "SaveBack": "#7C3AED"}
+
+                    for type_op in types_uniques_crypto:
+                        # Filtrer les données pour ce type d'opération
+                        indices = [i for i, t in enumerate(types_operation_crypto) if t == type_op]
+                        dates_type = [dates_achat_crypto[i] for i in indices]
+                        prix_type = [prix_achat_crypto[i] for i in indices]
+                        montants_type = [montants_achat_crypto[i] for i in indices]
+
+                        color = colors_crypto.get(type_op, "#FF6B35")
+
+                        fig_crypto.add_trace(
+                            go.Scatter(
+                                x=dates_type,
+                                y=prix_type,
+                                mode="markers",
+                                marker=dict(
+                                    size=7.5,
+                                    color=color,
+                                    symbol="circle",
+                                    line=dict(width=2, color=color),
+                                ),
+                                name=type_op,
+                                text=[
+                                    f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(
+                                        ",", " "
+                                    )
+                                    for date, prix, montant in zip(
+                                        dates_type, prix_type, montants_type
+                                    )
+                                ],
+                                hovertemplate="%{text}<extra></extra>",
+                            )
                         )
-                    )
 
                     # Ligne du prix moyen d'achat
                     fig_crypto.add_hline(
@@ -1250,6 +1303,10 @@ def main():
                 # Préparer les colonnes d'affichage
                 colonnes_base_crypto = ["date", "quantite", "prix_unitaire", "montant"]
 
+                # Ajouter type_operation si disponible
+                if "type_operation" in df_symbole_crypto.columns:
+                    colonnes_base_crypto.insert(1, "type_operation")
+
                 df_display_symbole_crypto = df_symbole_crypto[colonnes_base_crypto].copy()
 
                 # Formatage
@@ -1283,16 +1340,29 @@ def main():
                     )
 
                     # Renommer les colonnes
-                    df_display_symbole_crypto.columns = [
-                        "Date",
-                        "Quantité",
-                        "Prix Achat",
-                        "Investi",
-                        "Prix Actuel",
-                        "Valeur Actuelle",
-                        "P&L €",
-                        "P&L %",
-                    ]
+                    if "type_operation" in df_symbole_crypto.columns:
+                        df_display_symbole_crypto.columns = [
+                            "Date",
+                            "Type",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                            "Prix Actuel",
+                            "Valeur Actuelle",
+                            "P&L €",
+                            "P&L %",
+                        ]
+                    else:
+                        df_display_symbole_crypto.columns = [
+                            "Date",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                            "Prix Actuel",
+                            "Valeur Actuelle",
+                            "P&L €",
+                            "P&L %",
+                        ]
 
                     # Appliquer le style conditionnel
                     def color_pnl_crypto(val):
@@ -1307,12 +1377,21 @@ def main():
                     )
                     st.dataframe(styled_df_symbole_crypto, use_container_width=True)
                 else:
-                    df_display_symbole_crypto.columns = [
-                        "Date",
-                        "Quantité",
-                        "Prix Achat",
-                        "Investi",
-                    ]
+                    if "type_operation" in df_symbole_crypto.columns:
+                        df_display_symbole_crypto.columns = [
+                            "Date",
+                            "Type",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                        ]
+                    else:
+                        df_display_symbole_crypto.columns = [
+                            "Date",
+                            "Quantité",
+                            "Prix Achat",
+                            "Investi",
+                        ]
                     st.dataframe(df_display_symbole_crypto, use_container_width=True)
 
     with tab_revenus:
