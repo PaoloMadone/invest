@@ -26,12 +26,13 @@ class PriceService:
         cache_time = self.cache[symbol].get("timestamp", 0)
         return time.time() - cache_time < self.cache_duration
 
-    def get_crypto_price(self, symbol: str) -> Optional[float]:
+    def get_crypto_price(self, symbol: str, show_log: bool = True) -> Optional[float]:
         """
         Récupère le prix actuel d'une crypto via Yahoo Finance
 
         Args:
             symbol: Symbole de la crypto (ex: 'BTC', 'ETH')
+            show_log: Afficher ou non les logs (par défaut True)
 
         Returns:
             Prix actuel en EUR ou None si erreur
@@ -50,22 +51,30 @@ class PriceService:
                     price = float(hist["Close"].iloc[-1])
                     # Mettre en cache
                     self.cache[f"crypto_{symbol}"] = {"price": price, "timestamp": time.time()}
-                    print(f"✅ Crypto prix trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)")
+                    if show_log:
+                        print(
+                            f"Mapping crypto trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
+                        )
                     return price
 
-            print(f"❌ Aucun mapping trouvé pour la crypto: {symbol}")
+            if show_log:
+                print(f"❌ Aucun mapping trouvé pour la crypto: {symbol}")
             return None
 
         except Exception as e:
-            print(f"Erreur lors de la récupération du prix crypto de {symbol}: {e}")
+            if show_log:
+                print(f"Erreur lors de la récupération du prix crypto de {symbol}: {e}")
             return None
 
-    def _try_multiple_symbols(self, base_symbol: str) -> Optional[Tuple[str, float]]:
+    def _try_multiple_symbols(
+        self, base_symbol: str, show_log: bool = True
+    ) -> Optional[Tuple[str, float]]:
         """
         Essaie plusieurs variantes d'un symbole pour trouver le bon
 
         Args:
             base_symbol: Symbole de base à tester
+            show_log: Afficher ou non les logs (par défaut True)
 
         Returns:
             Tuple (symbole trouvé, prix) ou None si aucun ne fonctionne
@@ -88,7 +97,10 @@ class PriceService:
 
                 if not hist.empty:
                     price = float(hist["Close"].iloc[-1])
-                    print(f"✅ Symbole trouvé: {base_symbol} -> {variant} (prix: {price:.2f})")
+                    if show_log:
+                        print(
+                            f"Symbole bourse trouvé: {base_symbol} -> {variant} (prix: {price:.2f}€)"
+                        )
                     return variant, price
 
             except Exception:
@@ -96,12 +108,13 @@ class PriceService:
 
         return None
 
-    def get_stock_price(self, symbol: str) -> Optional[float]:
+    def get_stock_price(self, symbol: str, show_log: bool = True) -> Optional[float]:
         """
         Récupère le prix actuel d'une action via Yahoo Finance avec recherche automatique
 
         Args:
             symbol: Symbole de l'action (ex: 'AAPL', 'NVIDIA', 'HIWS')
+            show_log: Afficher ou non les logs (par défaut True)
 
         Returns:
             Prix actuel en EUR ou None si erreur
@@ -112,7 +125,7 @@ class PriceService:
 
         try:
             # Essayer le symbole tel quel puis les variantes
-            result = self._try_multiple_symbols(symbol.upper())
+            result = self._try_multiple_symbols(symbol.upper(), show_log)
 
             if result:
                 found_symbol, price = result
@@ -120,26 +133,33 @@ class PriceService:
                 self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
                 return price
 
-            print(f"❌ Aucun symbole trouvé pour: {symbol}")
+            if show_log:
+                print(f"❌ Aucun symbole trouvé pour: {symbol}")
             return None
 
         except Exception as e:
-            print(f"Erreur inattendue lors de la récupération du prix de l'action {symbol}: {e}")
+            if show_log:
+                print(
+                    f"Erreur inattendue lors de la récupération du prix de l'action {symbol}: {e}"
+                )
             return None
 
-    def get_current_price(self, symbol: str, asset_type: str) -> Optional[float]:
+    def get_current_price(
+        self, symbol: str, asset_type: str, show_log: bool = True
+    ) -> Optional[float]:
         """
         Récupère le prix actuel d'un actif selon son type
 
         Args:
             symbol: Symbole de l'actif
             asset_type: Type d'actif ('crypto' ou 'bourse')
+            show_log: Afficher ou non les logs (par défaut True)
 
         Returns:
             Prix actuel en EUR ou None si erreur
         """
         if asset_type.lower() == "crypto":
-            return self.get_crypto_price(symbol)
+            return self.get_crypto_price(symbol, show_log)
         elif asset_type.lower() == "bourse":
             # Vérifier d'abord le mapping pour les symboles existants
             learned_symbol = self._get_learned_mapping(symbol)
@@ -151,12 +171,16 @@ class PriceService:
                         price = float(hist["Close"].iloc[-1])
                         # Mettre en cache
                         self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
+                        if show_log:
+                            print(
+                                f"Mapping bourse trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
+                            )
                         return price
                 except Exception:
                     pass
 
             # Sinon, utiliser la méthode normale
-            return self.get_stock_price(symbol)
+            return self.get_stock_price(symbol, show_log)
         else:
             return None
 
@@ -175,11 +199,19 @@ class PriceService:
         """
         enriched_investments = []
 
+        # Créer un set pour éviter d'afficher plusieurs fois le même symbole
+        printed_symbols = set()
+
         for investment in investments:
             enriched_investment = investment.copy()
 
             symbol = investment["symbole"]
-            current_price = self.get_current_price(symbol, asset_type)
+            current_price = self.get_current_price(
+                symbol, asset_type, show_log=(symbol not in printed_symbols)
+            )
+
+            if symbol not in printed_symbols:
+                printed_symbols.add(symbol)
 
             if current_price is not None:
                 buy_price = investment["prix_unitaire"]
@@ -330,9 +362,7 @@ class PriceService:
                     if not hist.empty:
                         price = float(hist["Close"].iloc[-1])
                         self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
-                        print(
-                            f"✅ Mapping trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
-                        )
+                        print(f"Mapping trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)")
                         return price, None
                 except Exception:
                     print(f"❌ Erreur avec le mapping {symbol} -> {learned_symbol}")
