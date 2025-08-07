@@ -449,7 +449,12 @@ def main():
 
                 if bourse_with_perf:
                     df_bourse = pd.DataFrame(bourse_with_perf)
-                    df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.strftime("%d/%m/%Y")
+                    # Trier par date AVANT la conversion en format d'affichage
+                    df_bourse["date"] = pd.to_datetime(df_bourse["date"])
+                    df_bourse = df_bourse.sort_values(
+                        "date", ascending=False
+                    )  # Plus récent en premier
+                    df_bourse["date"] = df_bourse["date"].dt.strftime("%d/%m/%Y")
 
                     # Préparer les colonnes d'affichage
                     colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
@@ -567,14 +572,14 @@ def main():
                 previous_symbol = st.session_state.bourse_deep_dive_symbol
                 if previous_symbol in symboles_uniques:
                     default_index = symboles_uniques.index(previous_symbol)
-            
+
             symbole_selected = st.selectbox(
                 "Sélectionner un titre pour analyse détaillée",
                 options=symboles_uniques,
                 index=default_index,
                 placeholder="-- Choisir un titre --",
             )
-            
+
             # Sauvegarder la sélection dans session_state
             if symbole_selected:
                 st.session_state.bourse_deep_dive_symbol = symbole_selected
@@ -751,7 +756,12 @@ def main():
                 st.subheader(f"Historique des transactions - {symbole_selected}")
 
                 df_symbole = pd.DataFrame(perf_symbole)
-                df_symbole["date"] = pd.to_datetime(df_symbole["date"]).dt.strftime("%d/%m/%Y")
+                # Trier par date AVANT la conversion en format d'affichage
+                df_symbole["date"] = pd.to_datetime(df_symbole["date"])
+                df_symbole = df_symbole.sort_values(
+                    "date", ascending=False
+                )  # Plus récent en premier
+                df_symbole["date"] = df_symbole["date"].dt.strftime("%d/%m/%Y")
 
                 # Préparer les colonnes d'affichage
                 colonnes_base = ["date", "quantite", "prix_unitaire", "montant"]
@@ -1017,7 +1027,12 @@ def main():
 
                 if crypto_with_perf:
                     df_crypto = pd.DataFrame(crypto_with_perf)
-                    df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.strftime("%d/%m/%Y")
+                    # Trier par date AVANT la conversion en format d'affichage
+                    df_crypto["date"] = pd.to_datetime(df_crypto["date"])
+                    df_crypto = df_crypto.sort_values(
+                        "date", ascending=False
+                    )  # Plus récent en premier
+                    df_crypto["date"] = df_crypto["date"].dt.strftime("%d/%m/%Y")
 
                     # Préparer les colonnes d'affichage
                     colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
@@ -1135,7 +1150,7 @@ def main():
                 previous_symbol_crypto = st.session_state.crypto_deep_dive_symbol
                 if previous_symbol_crypto in symboles_uniques_crypto:
                     default_index_crypto = symboles_uniques_crypto.index(previous_symbol_crypto)
-            
+
             symbole_selected_crypto = st.selectbox(
                 "Sélectionner une crypto pour analyse détaillée",
                 options=symboles_uniques_crypto,
@@ -1143,7 +1158,7 @@ def main():
                 placeholder="-- Choisir une crypto --",
                 key="crypto_deep_dive_select",
             )
-            
+
             # Sauvegarder la sélection dans session_state
             if symbole_selected_crypto:
                 st.session_state.crypto_deep_dive_symbol = symbole_selected_crypto
@@ -1359,9 +1374,12 @@ def main():
                 st.subheader(f"Historique des transactions - {symbole_selected_crypto}")
 
                 df_symbole_crypto = pd.DataFrame(perf_symbole_crypto)
-                df_symbole_crypto["date"] = pd.to_datetime(df_symbole_crypto["date"]).dt.strftime(
-                    "%d/%m/%Y"
-                )
+                # Trier par date AVANT la conversion en format d'affichage
+                df_symbole_crypto["date"] = pd.to_datetime(df_symbole_crypto["date"])
+                df_symbole_crypto = df_symbole_crypto.sort_values(
+                    "date", ascending=False
+                )  # Plus récent en premier
+                df_symbole_crypto["date"] = df_symbole_crypto["date"].dt.strftime("%d/%m/%Y")
 
                 # Préparer les colonnes d'affichage
                 colonnes_base_crypto = ["date", "quantite", "prix_unitaire", "montant"]
