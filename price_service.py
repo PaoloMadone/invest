@@ -199,19 +199,19 @@ class PriceService:
         """
         enriched_investments = []
 
-        # Créer un set pour éviter d'afficher plusieurs fois le même symbole
-        printed_symbols = set()
+        # Récupérer les symboles uniques pour éviter les appels API redondants
+        unique_symbols = list(set([inv["symbole"] for inv in investments]))
+
+        # Récupérer les prix une seule fois par symbole
+        symbol_prices = {}
+        for symbol in unique_symbols:
+            symbol_prices[symbol] = self.get_current_price(symbol, asset_type, show_log=True)
 
         for investment in investments:
             enriched_investment = investment.copy()
 
             symbol = investment["symbole"]
-            current_price = self.get_current_price(
-                symbol, asset_type, show_log=(symbol not in printed_symbols)
-            )
-
-            if symbol not in printed_symbols:
-                printed_symbols.add(symbol)
+            current_price = symbol_prices[symbol]
 
             if current_price is not None:
                 buy_price = investment["prix_unitaire"]
