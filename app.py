@@ -449,7 +449,7 @@ def main():
 
                 if bourse_with_perf:
                     df_bourse = pd.DataFrame(bourse_with_perf)
-                    df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.date
+                    df_bourse["date"] = pd.to_datetime(df_bourse["date"]).dt.strftime("%d/%m/%Y")
 
                     # Préparer les colonnes d'affichage
                     colonnes_base = ["date", "symbole", "quantite", "prix_unitaire", "montant"]
@@ -740,7 +740,7 @@ def main():
                 st.subheader(f"Historique des transactions - {symbole_selected}")
 
                 df_symbole = pd.DataFrame(perf_symbole)
-                df_symbole["date"] = pd.to_datetime(df_symbole["date"]).dt.date
+                df_symbole["date"] = pd.to_datetime(df_symbole["date"]).dt.strftime("%d/%m/%Y")
 
                 # Préparer les colonnes d'affichage
                 colonnes_base = ["date", "quantite", "prix_unitaire", "montant"]
@@ -996,7 +996,7 @@ def main():
 
                 if crypto_with_perf:
                     df_crypto = pd.DataFrame(crypto_with_perf)
-                    df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.date
+                    df_crypto["date"] = pd.to_datetime(df_crypto["date"]).dt.strftime("%d/%m/%Y")
 
                     # Préparer les colonnes d'affichage
                     df_display = df_crypto[
