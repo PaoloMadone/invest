@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-import requests
 import yfinance as yf
 
 
@@ -29,7 +28,7 @@ class PriceService:
 
     def get_crypto_price(self, symbol: str) -> Optional[float]:
         """
-        Récupère le prix actuel d'une crypto via CoinGecko API
+        Récupère le prix actuel d'une crypto via Yahoo Finance
 
         Args:
             symbol: Symbole de la crypto (ex: 'BTC', 'ETH')
@@ -37,54 +36,28 @@ class PriceService:
         Returns:
             Prix actuel en EUR ou None si erreur
         """
-        symbol_lower = symbol.lower()
-
         # Vérifier le cache
-        if self._is_cache_valid(f"crypto_{symbol_lower}"):
-            return self.cache[f"crypto_{symbol_lower}"]["price"]
+        if self._is_cache_valid(f"crypto_{symbol}"):
+            return self.cache[f"crypto_{symbol}"]["price"]
 
         try:
-            # Mapping des symboles vers les IDs CoinGecko
-            symbol_mapping = {
-                "btc": "bitcoin",
-                "eth": "ethereum",
-                "ada": "cardano",
-                "sol": "solana",
-                "dot": "polkadot",
-                "matic": "polygon",
-                "avax": "avalanche-2",
-                "atom": "cosmos",
-                "link": "chainlink",
-            }
+            # Vérifier les mappings appris depuis Supabase
+            learned_symbol = self._get_learned_mapping(symbol)
+            if learned_symbol:
+                ticker = yf.Ticker(learned_symbol)
+                hist = ticker.history(period="2d")
+                if not hist.empty:
+                    price = float(hist["Close"].iloc[-1])
+                    # Mettre en cache
+                    self.cache[f"crypto_{symbol}"] = {"price": price, "timestamp": time.time()}
+                    print(f"✅ Crypto prix trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)")
+                    return price
 
-            crypto_id = symbol_mapping.get(symbol_lower, symbol_lower)
-
-            url = f"{self.coingecko_base_url}/simple/price"
-            params = {"ids": crypto_id, "vs_currencies": "eur"}
-
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-
-            data = response.json()
-
-            if crypto_id in data and "eur" in data[crypto_id]:
-                price = data[crypto_id]["eur"]
-
-                # Mettre en cache
-                self.cache[f"crypto_{symbol_lower}"] = {"price": price, "timestamp": time.time()}
-
-                return price
-
+            print(f"❌ Aucun mapping trouvé pour la crypto: {symbol}")
             return None
 
-        except requests.exceptions.RequestException as e:
-            print(f"Erreur réseau lors de la récupération du prix crypto de {symbol}: {e}")
-            return None
-        except KeyError as e:
-            print(f"Symbole crypto {symbol} non trouvé dans CoinGecko: {e}")
-            return None
         except Exception as e:
-            print(f"Erreur inattendue lors de la récupération du prix crypto de {symbol}: {e}")
+            print(f"Erreur lors de la récupération du prix crypto de {symbol}: {e}")
             return None
 
     def _try_multiple_symbols(self, base_symbol: str) -> Optional[Tuple[str, float]]:
