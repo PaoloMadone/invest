@@ -188,10 +188,10 @@ class PriceService:
         self, investments: List[Dict], asset_type: str
     ) -> List[Dict]:
         """
-        Calcule la performance de chaque investissement
+        Calcule la performance de chaque investissement (achats ET ventes)
 
         Args:
-            investments: Liste des investissements
+            investments: Liste des investissements (achats et ventes)
             asset_type: Type d'actif ('crypto' ou 'bourse')
 
         Returns:
@@ -212,35 +212,62 @@ class PriceService:
 
             symbol = investment["symbole"]
             current_price = symbol_prices[symbol]
+            is_sale = investment.get("type_operation") == "Vente"
 
             if current_price is not None:
-                buy_price = investment["prix_unitaire"]
+                transaction_price = investment["prix_unitaire"]
                 quantity = investment["quantite"]
                 initial_value = investment["montant"]
 
-                # Valeur actuelle du portefeuille
-                current_value = quantity * current_price
+                if is_sale:
+                    # Pour les ventes : valeur actuelle = 0 (on n'a plus l'actif)
+                    # PnL = prix de vente vs prix d'achat moyen (calculé plus tard via FIFO)
+                    current_value = 0.0
+                    
+                    # PnL temporaire basé sur le prix actuel vs prix de vente
+                    # (Le PnL réalisé final sera calculé via FIFO dans calculate_realized_pnl)
+                    pnl_amount = 0.0  # Sera calculé plus tard
+                    pnl_percentage = 0.0  # Sera calculé plus tard
 
-                # Plus-value/moins-value en valeur absolue
-                pnl_amount = current_value - initial_value
+                    enriched_investment.update(
+                        {
+                            "prix_actuel": current_price,
+                            "valeur_actuelle": current_value,
+                            "pnl_montant": pnl_amount,
+                            "pnl_pourcentage": pnl_percentage,
+                            "prix_recupere": True,
+                        }
+                    )
+                else:
+                    # Pour les achats : calcul normal (comme avant)
+                    current_value = quantity * current_price
 
-                # Plus-value/moins-value en pourcentage
-                pnl_percentage = ((current_price - buy_price) / buy_price) * 100
+                    # Plus-value/moins-value en valeur absolue
+                    pnl_amount = current_value - initial_value
 
-                enriched_investment.update(
-                    {
-                        "prix_actuel": current_price,
-                        "valeur_actuelle": current_value,
-                        "pnl_montant": pnl_amount,
-                        "pnl_pourcentage": pnl_percentage,
-                        "prix_recupere": True,
-                    }
-                )
+                    # Plus-value/moins-value en pourcentage
+                    pnl_percentage = ((current_price - transaction_price) / transaction_price) * 100
+
+                    enriched_investment.update(
+                        {
+                            "prix_actuel": current_price,
+                            "valeur_actuelle": current_value,
+                            "pnl_montant": pnl_amount,
+                            "pnl_pourcentage": pnl_percentage,
+                            "prix_recupere": True,
+                        }
+                    )
             else:
+                # Prix non récupéré
+                if is_sale:
+                    current_value = 0.0
+                else:
+                    current_value = investment["montant"]
+                
                 enriched_investment.update(
                     {
                         "prix_actuel": None,
-                        "valeur_actuelle": investment["montant"],
+                        "valeur_actuelle": current_value,
                         "pnl_montant": 0,
                         "pnl_pourcentage": 0,
                         "prix_recupere": False,
@@ -251,57 +278,174 @@ class PriceService:
 
         return enriched_investments
 
+    def calculate_realized_pnl(self, investments: List[Dict], symbol: str) -> Dict:
+        """
+        Calcule le PnL réalisé pour un symbole donné en utilisant la méthode FIFO
+        
+        Args:
+            investments: Liste de tous les investissements pour ce symbole
+            symbol: Symbole de l'actif
+            
+        Returns:
+            Dict avec les informations de PnL réalisé
+        """
+        # Filtrer et trier par date (FIFO = First In, First Out)
+        symbol_investments = [
+            inv for inv in investments 
+            if inv["symbole"].upper() == symbol.upper()
+        ]
+        
+        # Trier par date pour FIFO
+        symbol_investments.sort(key=lambda x: x["date"])
+        
+        # Séparer achats et ventes
+        purchases = [inv for inv in symbol_investments if inv.get("type_operation") != "Vente"]
+        sales = [inv for inv in symbol_investments if inv.get("type_operation") == "Vente"]
+        
+        if not sales:
+            return {
+                "pnl_realise_montant": 0.0,
+                "pnl_realise_pourcentage": 0.0,
+                "quantite_vendue_totale": 0.0,
+                "prix_moyen_vente": 0.0,
+                "prix_moyen_achat_vendu": 0.0
+            }
+        
+        # Calcul FIFO
+        remaining_purchases = purchases.copy()  # Queue des achats restants
+        total_pnl_realized = 0.0
+        total_quantity_sold = 0.0
+        total_sale_value = 0.0
+        total_cost_basis = 0.0
+        
+        for sale in sales:
+            sale_quantity = sale["quantite"]
+            sale_price = sale["prix_unitaire"]
+            quantity_to_match = sale_quantity
+            
+            total_quantity_sold += sale_quantity
+            total_sale_value += sale["montant"]
+            
+            # Associer cette vente aux achats FIFO
+            while quantity_to_match > 0 and remaining_purchases:
+                purchase = remaining_purchases[0]
+                available_qty = purchase["quantite"]
+                purchase_price = purchase["prix_unitaire"]
+                
+                if available_qty <= quantity_to_match:
+                    # Consommer tout cet achat
+                    matched_qty = available_qty
+                    remaining_purchases.pop(0)  # Retirer cet achat
+                else:
+                    # Consommer partiellement cet achat
+                    matched_qty = quantity_to_match
+                    purchase["quantite"] -= matched_qty  # Réduire la quantité restante
+                
+                # Calculer le PnL pour cette portion
+                cost_basis = matched_qty * purchase_price
+                sale_value = matched_qty * sale_price
+                portion_pnl = sale_value - cost_basis
+                
+                total_pnl_realized += portion_pnl
+                total_cost_basis += cost_basis
+                quantity_to_match -= matched_qty
+        
+        # Calculs finaux
+        avg_sale_price = total_sale_value / total_quantity_sold if total_quantity_sold > 0 else 0.0
+        avg_purchase_price = total_cost_basis / total_quantity_sold if total_quantity_sold > 0 else 0.0
+        pnl_percentage = (total_pnl_realized / total_cost_basis * 100) if total_cost_basis > 0 else 0.0
+        
+        return {
+            "pnl_realise_montant": total_pnl_realized,
+            "pnl_realise_pourcentage": pnl_percentage,
+            "quantite_vendue_totale": total_quantity_sold,
+            "prix_moyen_vente": avg_sale_price,
+            "prix_moyen_achat_vendu": avg_purchase_price
+        }
+
     def calculate_portfolio_summary(
         self, crypto_investments: List[Dict], stock_investments: List[Dict]
     ) -> Dict:
         """
-        Calcule un résumé des performances du portfolio complet
+        Calcule un résumé des performances du portfolio complet (avec PnL réalisé/non réalisé)
 
         Args:
             crypto_investments: Investissements crypto avec performances
             stock_investments: Investissements bourse avec performances
 
         Returns:
-            Dictionnaire avec les métriques du portfolio
+            Dictionnaire avec les métriques du portfolio (incluant PnL réalisé)
         """
-        # Calculs pour crypto
-        crypto_initial = sum([inv["montant"] for inv in crypto_investments])
-        crypto_current = sum([inv["valeur_actuelle"] for inv in crypto_investments])
-        crypto_pnl = crypto_current - crypto_initial
-
-        # Calculs pour bourse
-        stock_initial = sum([inv["montant"] for inv in stock_investments])
-        stock_current = sum([inv["valeur_actuelle"] for inv in stock_investments])
-        stock_pnl = stock_current - stock_initial
-
+        # Fonction helper pour calculer les métriques d'un type d'actif
+        def calculate_asset_metrics(investments, asset_type_name):
+            if not investments:
+                return {
+                    "valeur_initiale": 0,
+                    "valeur_actuelle": 0,
+                    "pnl_montant": 0,
+                    "pnl_pourcentage": 0,
+                    "pnl_realise": 0,
+                    "pnl_non_realise": 0
+                }
+            
+            # Séparer achats et ventes pour calculs corrects
+            purchases = [inv for inv in investments if inv.get("type_operation") != "Vente"]
+            sales = [inv for inv in investments if inv.get("type_operation") == "Vente"]
+            
+            # Valeur initiale = somme des achats seulement
+            initial_value = sum([inv["montant"] for inv in purchases])
+            
+            # Valeur actuelle = somme des valeurs actuelles (achats seulement, ventes = 0)
+            current_value = sum([inv["valeur_actuelle"] for inv in purchases])
+            
+            # PnL non réalisé = différence valeur actuelle vs investissement initial
+            unrealized_pnl = current_value - initial_value
+            
+            # PnL réalisé = calculer pour tous les symboles uniques
+            unique_symbols = list(set([inv["symbole"] for inv in investments]))
+            realized_pnl_total = 0.0
+            
+            for symbol in unique_symbols:
+                realized_data = self.calculate_realized_pnl(investments, symbol)
+                realized_pnl_total += realized_data["pnl_realise_montant"]
+            
+            # PnL total = réalisé + non réalisé
+            total_pnl = realized_pnl_total + unrealized_pnl
+            
+            # Pourcentage basé sur la valeur initiale
+            pnl_pct = (total_pnl / initial_value * 100) if initial_value > 0 else 0
+            
+            return {
+                "valeur_initiale": initial_value,
+                "valeur_actuelle": current_value,
+                "pnl_montant": total_pnl,
+                "pnl_pourcentage": pnl_pct,
+                "pnl_realise": realized_pnl_total,
+                "pnl_non_realise": unrealized_pnl
+            }
+        
+        # Calculs pour crypto et bourse
+        crypto_metrics = calculate_asset_metrics(crypto_investments, "crypto")
+        stock_metrics = calculate_asset_metrics(stock_investments, "bourse")
+        
         # Totaux
-        total_initial = crypto_initial + stock_initial
-        total_current = crypto_current + stock_current
-        total_pnl = total_current - total_initial
-
-        # Pourcentages
-        crypto_pnl_pct = (crypto_pnl / crypto_initial * 100) if crypto_initial > 0 else 0
-        stock_pnl_pct = (stock_pnl / stock_initial * 100) if stock_initial > 0 else 0
+        total_initial = crypto_metrics["valeur_initiale"] + stock_metrics["valeur_initiale"]
+        total_current = crypto_metrics["valeur_actuelle"] + stock_metrics["valeur_actuelle"]
+        total_realized = crypto_metrics["pnl_realise"] + stock_metrics["pnl_realise"]
+        total_unrealized = crypto_metrics["pnl_non_realise"] + stock_metrics["pnl_non_realise"]
+        total_pnl = total_realized + total_unrealized
         total_pnl_pct = (total_pnl / total_initial * 100) if total_initial > 0 else 0
 
         return {
-            "crypto": {
-                "valeur_initiale": crypto_initial,
-                "valeur_actuelle": crypto_current,
-                "pnl_montant": crypto_pnl,
-                "pnl_pourcentage": crypto_pnl_pct,
-            },
-            "bourse": {
-                "valeur_initiale": stock_initial,
-                "valeur_actuelle": stock_current,
-                "pnl_montant": stock_pnl,
-                "pnl_pourcentage": stock_pnl_pct,
-            },
+            "crypto": crypto_metrics,
+            "bourse": stock_metrics,
             "total": {
                 "valeur_initiale": total_initial,
                 "valeur_actuelle": total_current,
                 "pnl_montant": total_pnl,
                 "pnl_pourcentage": total_pnl_pct,
+                "pnl_realise": total_realized,
+                "pnl_non_realise": total_unrealized
             },
         }
 
