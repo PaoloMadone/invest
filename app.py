@@ -10,8 +10,8 @@ import streamlit as st
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
-from price_service import PriceService
 import business_logic
+from price_service import PriceService
 
 # Charger les variables d'environnement
 load_dotenv()
