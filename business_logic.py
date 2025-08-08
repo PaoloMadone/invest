@@ -218,3 +218,188 @@ def creer_donnees_investissement(
         "quantite": quantite,
         "hors_budget": hors_budget,
     }
+
+
+def valider_donnees_vente(
+    montant: float,
+    prix_unitaire: float,
+    symbole: str,
+    quantite_vente: float,
+    investissements: List[Dict],
+) -> List[str]:
+    """
+    Valide les données d'une vente
+
+    Args:
+        montant: Montant de la vente
+        prix_unitaire: Prix unitaire de vente
+        symbole: Symbole de l'actif
+        quantite_vente: Quantité à vendre
+        investissements: Liste des investissements existants pour ce symbole
+
+    Returns:
+        Liste des erreurs de validation (vide si valide)
+    """
+    erreurs = []
+
+    if montant <= 0:
+        erreurs.append("Le montant de vente doit être supérieur à 0")
+
+    if prix_unitaire <= 0:
+        erreurs.append("Le prix unitaire de vente doit être supérieur à 0")
+
+    if quantite_vente <= 0:
+        erreurs.append("La quantité à vendre doit être supérieure à 0")
+
+    if not symbole or not symbole.strip():
+        erreurs.append("Le symbole est obligatoire")
+
+    # Vérifier la quantité disponible
+    quantite_disponible = calculer_quantite_disponible(investissements, symbole)
+    if quantite_vente > quantite_disponible:
+        erreurs.append(
+            f"Quantité insuffisante. Disponible: {quantite_disponible:.4f}, demandée: {quantite_vente:.4f}"
+        )
+
+    return erreurs
+
+
+def calculer_quantite_disponible(investissements: List[Dict], symbole: str) -> float:
+    """
+    Calcule la quantité disponible pour un symbole donné
+    (somme des achats - somme des ventes)
+
+    Args:
+        investissements: Liste de tous les investissements
+        symbole: Symbole de l'actif
+
+    Returns:
+        Quantité disponible pour vente
+    """
+    quantite_totale = 0.0
+
+    for inv in investissements:
+        if inv["symbole"].upper() == symbole.upper():
+            # Les achats ont une quantité positive, les ventes négative
+            if inv.get("type_operation") == "Vente":
+                quantite_totale -= inv["quantite"]  # Soustraire les ventes
+            else:
+                quantite_totale += inv["quantite"]  # Ajouter les achats
+
+    return max(0.0, quantite_totale)  # Ne pas retourner de quantité négative
+
+
+def verifier_position_suffisante(
+    investissements: List[Dict], symbole: str, quantite_demandee: float
+) -> bool:
+    """
+    Vérifie si on a suffisamment de quantité pour effectuer une vente
+
+    Args:
+        investissements: Liste des investissements
+        symbole: Symbole de l'actif
+        quantite_demandee: Quantité qu'on veut vendre
+
+    Returns:
+        True si la position est suffisante
+    """
+    quantite_disponible = calculer_quantite_disponible(investissements, symbole)
+    return quantite_demandee <= quantite_disponible
+
+
+def creer_donnees_vente(
+    date_vente: str,
+    symbole: str,
+    montant: float,
+    prix_unitaire: float,
+    type_operation: str = "Vente",
+) -> Dict:
+    """
+    Crée un dictionnaire de données pour une vente
+    Note: La quantité sera stockée comme positive, mais sera traitée comme négative dans les calculs
+
+    Args:
+        date_vente: Date de vente (format ISO)
+        symbole: Symbole de l'actif
+        montant: Montant de la vente (positif)
+        prix_unitaire: Prix unitaire de vente
+        type_operation: Type d'opération (toujours "Vente")
+
+    Returns:
+        Dictionnaire des données de la vente
+    """
+    quantite = calculer_quantite_investissement(montant, prix_unitaire)
+
+    return {
+        "date": date_vente,
+        "symbole": symbole.upper(),
+        "montant": montant,  # Montant positif pour l'affichage
+        "prix_unitaire": prix_unitaire,
+        "quantite": quantite,  # Quantité positive pour l'affichage, gérée comme négative dans les calculs
+        "hors_budget": True,  # Les ventes sont toujours hors budget (ne consomment pas le budget)
+        "type_operation": type_operation,
+    }
+
+
+def calculer_positions_restantes_fifo(investissements: List[Dict], symbole: str) -> List[Dict]:
+    """
+    Calcule les positions restantes par ligne d'achat après application FIFO des ventes
+
+    Args:
+        investissements: Liste de tous les investissements
+        symbole: Symbole de l'actif
+
+    Returns:
+        Liste des achats avec quantités restantes après ventes FIFO
+    """
+    # Filtrer et trier par date (FIFO = First In, First Out)
+    symbol_investments = [
+        inv for inv in investissements if inv["symbole"].upper() == symbole.upper()
+    ]
+
+    # Trier par date pour FIFO
+    symbol_investments.sort(key=lambda x: x["date"])
+
+    # Séparer achats et ventes
+    purchases = [inv for inv in symbol_investments if inv.get("type_operation") != "Vente"]
+    sales = [inv for inv in symbol_investments if inv.get("type_operation") == "Vente"]
+
+    # Créer une copie des achats avec quantité restante
+    remaining_positions = []
+    for purchase in purchases:
+        remaining_positions.append(
+            {
+                "date": purchase["date"],
+                "type_operation": purchase.get("type_operation", "Achat"),
+                "prix_unitaire": purchase["prix_unitaire"],
+                "quantite_initiale": purchase["quantite"],
+                "quantite_restante": purchase["quantite"],
+                "montant_initial": purchase["montant"],
+                "montant_restant": purchase["montant"],
+            }
+        )
+
+    # Appliquer les ventes FIFO
+    for sale in sales:
+        quantity_to_sell = sale["quantite"]
+
+        # Appliquer la vente sur les positions restantes (FIFO)
+        for position in remaining_positions:
+            if quantity_to_sell <= 0:
+                break
+
+            if position["quantite_restante"] > 0:
+                # Calculer combien on peut vendre de cette position
+                qty_from_this_position = min(position["quantite_restante"], quantity_to_sell)
+
+                # Mettre à jour la position
+                position["quantite_restante"] -= qty_from_this_position
+                position["montant_restant"] = (
+                    position["quantite_restante"] * position["prix_unitaire"]
+                )
+
+                # Réduire la quantité à vendre
+                quantity_to_sell -= qty_from_this_position
+
+    # Filtrer pour ne garder que les positions avec des informations utiles
+    return [pos for pos in remaining_positions if pos["quantite_initiale"] > 0]
