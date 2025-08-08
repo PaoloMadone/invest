@@ -314,7 +314,7 @@ def main():
 
                 if symbole_choice == "🆕 Autre symbole...":
                     symbole_bourse = st.text_input(
-                        "",
+                        "Nouveau symbole",
                         placeholder="Ex: NVIDIA, AAPL, HIWS...",
                         help="Tapez le nom ou symbole de l'action",
                         label_visibility="collapsed",
@@ -1147,7 +1147,7 @@ def main():
 
                 if symbole_choice_crypto == "🆕 Autre symbole...":
                     symbole_crypto = st.text_input(
-                        "",
+                        "Nouveau symbole crypto",
                         placeholder="Ex: BTC, ETH, ADA...",
                         help="Tapez le nom ou symbole de la crypto",
                         key="crypto_symbole_input",
