@@ -325,3 +325,66 @@ def creer_donnees_vente(
         "hors_budget": True,  # Les ventes sont toujours hors budget (ne consomment pas le budget)
         "type_operation": type_operation,
     }
+
+
+def calculer_positions_restantes_fifo(investissements: List[Dict], symbole: str) -> List[Dict]:
+    """
+    Calcule les positions restantes par ligne d'achat après application FIFO des ventes
+    
+    Args:
+        investissements: Liste de tous les investissements
+        symbole: Symbole de l'actif
+        
+    Returns:
+        Liste des achats avec quantités restantes après ventes FIFO
+    """
+    # Filtrer et trier par date (FIFO = First In, First Out)
+    symbol_investments = [
+        inv for inv in investissements 
+        if inv["symbole"].upper() == symbole.upper()
+    ]
+    
+    # Trier par date pour FIFO
+    symbol_investments.sort(key=lambda x: x["date"])
+    
+    
+    # Séparer achats et ventes
+    purchases = [inv for inv in symbol_investments if inv.get("type_operation") != "Vente"]
+    sales = [inv for inv in symbol_investments if inv.get("type_operation") == "Vente"]
+    
+    # Créer une copie des achats avec quantité restante
+    remaining_positions = []
+    for purchase in purchases:
+        remaining_positions.append({
+            "date": purchase["date"],
+            "type_operation": purchase.get("type_operation", "Achat"),
+            "prix_unitaire": purchase["prix_unitaire"],
+            "quantite_initiale": purchase["quantite"],
+            "quantite_restante": purchase["quantite"],
+            "montant_initial": purchase["montant"],
+            "montant_restant": purchase["montant"]
+        })
+    
+    # Appliquer les ventes FIFO
+    for sale in sales:
+        quantity_to_sell = sale["quantite"]
+        
+        # Appliquer la vente sur les positions restantes (FIFO)
+        for position in remaining_positions:
+            if quantity_to_sell <= 0:
+                break
+                
+            if position["quantite_restante"] > 0:
+                # Calculer combien on peut vendre de cette position
+                qty_from_this_position = min(position["quantite_restante"], quantity_to_sell)
+                
+                # Mettre à jour la position
+                position["quantite_restante"] -= qty_from_this_position
+                position["montant_restant"] = position["quantite_restante"] * position["prix_unitaire"]
+                
+                # Réduire la quantité à vendre
+                quantity_to_sell -= qty_from_this_position
+    
+    
+    # Filtrer pour ne garder que les positions avec des informations utiles
+    return [pos for pos in remaining_positions if pos["quantite_initiale"] > 0]

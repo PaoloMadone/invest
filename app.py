@@ -1,3 +1,4 @@
+import copy
 import json
 import math
 import os
@@ -31,6 +32,7 @@ def load_data():
         revenus = supabase.table("revenus").select("*").execute().data
         bourse = supabase.table("bourse").select("*").execute().data
         crypto = supabase.table("crypto").select("*").execute().data
+
 
         return {"revenus": revenus, "bourse": bourse, "crypto": crypto}
     except Exception as e:
@@ -434,6 +436,12 @@ def main():
                                 # Recharger les données
                                 data = load_data()
                                 save_data(data)
+                                
+                                # Vider tous les caches de performance qui pourraient être corrompus
+                                keys_to_remove = [key for key in st.session_state.keys() if 'perf' in key or 'cache' in key]
+                                for key in keys_to_remove:
+                                    del st.session_state[key]
+                                
                                 st.success("Vente bourse ajoutée!")
                                 st.rerun()
                             except Exception as e:
@@ -713,6 +721,8 @@ def main():
                 # Nouvelle ligne : Métriques de PnL réalisé/non réalisé
                 if ventes_symbole:  # Afficher seulement s'il y a des ventes
                     st.markdown("#### 💰 Analyse PnL Réalisé vs Non Réalisé")
+                    
+                    # Première ligne : PnL
                     col1, col2, col3, col4 = st.columns(4)
                     
                     with col1:
@@ -731,6 +741,60 @@ def main():
                     with col4:
                         quantite_vendue = pnl_realise_data["quantite_vendue_totale"]
                         st.metric("Quantité Vendue", f"{quantite_vendue:.4f}")
+                    
+                    # Deuxième ligne : Prix moyens
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        prix_moyen_vente = pnl_realise_data["prix_moyen_vente"]
+                        st.metric("Prix Moyen Vente", f"{prix_moyen_vente:,.2f}€".replace(",", " "))
+                    
+                    with col2:
+                        prix_moyen_achat_vendu = pnl_realise_data["prix_moyen_achat_vendu"]
+                        st.metric("Prix Moyen Achat Vendu", f"{prix_moyen_achat_vendu:,.2f}€".replace(",", " "))
+                    
+                    with col3:
+                        # Différence de prix
+                        diff_prix = prix_moyen_vente - prix_moyen_achat_vendu
+                        st.metric("Différence Prix", f"{diff_prix:+,.2f}€".replace(",", " "))
+                    
+                    with col4:
+                        # Espace libre pour futur usage
+                        st.metric("", "")
+                    
+                    # Tableau détaillé des positions restantes
+                    st.markdown("#### 📋 Détail des Positions par Ligne d'Achat (FIFO)")
+                    
+                    # SOLUTION: Récupérer directement les données depuis Supabase pour éviter les corruptions
+                    raw_data = supabase.table("bourse").select("*").eq("symbole", symbole_selected.upper()).execute().data
+                    
+                    positions_restantes = business_logic.calculer_positions_restantes_fifo(
+                        raw_data, symbole_selected
+                    )
+                    
+                    if positions_restantes:
+                        # Préparer les données pour le tableau
+                        tableau_positions = []
+                        for pos in positions_restantes:
+                            date_obj = datetime.strptime(pos["date"], "%Y-%m-%d")
+                            tableau_positions.append({
+                                "Date": date_obj.strftime("%d/%m/%Y"),
+                                "Type": pos["type_operation"],
+                                "Prix €": f"{pos['prix_unitaire']:,.2f}".replace(",", " "),
+                                "Quantité Initiale": f"{pos['quantite_initiale']:.4f}",
+                                "Quantité Restante": f"{pos['quantite_restante']:.4f}",
+                                "Valeur Restante €": f"{pos['montant_restant']:,.2f}".replace(",", " "),
+                                "% Vendu": f"{((pos['quantite_initiale'] - pos['quantite_restante']) / pos['quantite_initiale'] * 100):.1f}%" if pos['quantite_initiale'] > 0 else "0%"
+                            })
+                        
+                        df_positions = pd.DataFrame(tableau_positions)
+                        st.dataframe(df_positions, use_container_width=True, hide_index=True)
+                        
+                        # Résumé
+                        total_initial = sum([pos['montant_initial'] for pos in positions_restantes])
+                        total_restant = sum([pos['montant_restant'] for pos in positions_restantes])
+                        total_vendu = total_initial - total_restant
+                        st.info(f"📈 **Résumé :** {total_vendu:,.2f}€ vendu sur {total_initial:,.2f}€ initiaux ({total_vendu/total_initial*100:.1f}% du portefeuille initial)".replace(",", " "))
 
                 # Graphique d'évolution du prix avec points d'achat
                 st.subheader(f"📈 Évolution du prix - {symbole_selected}")
@@ -1111,6 +1175,12 @@ def main():
                                 # Recharger les données
                                 data = load_data()
                                 save_data(data)
+                                
+                                # Vider tous les caches de performance qui pourraient être corrompus
+                                keys_to_remove = [key for key in st.session_state.keys() if 'perf' in key or 'cache' in key]
+                                for key in keys_to_remove:
+                                    del st.session_state[key]
+                                
                                 st.success("Vente crypto ajoutée!")
                                 st.rerun()
                             except Exception as e:
@@ -1385,33 +1455,78 @@ def main():
 
                     # Affichage détaillé du PnL si il y a des ventes
                     if ventes_symbole_crypto:
-                        st.markdown("---")
+                        st.markdown("#### 💰 Analyse PnL Réalisé vs Non Réalisé")
+                        
+                        # Première ligne : PnL
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
-                            st.metric(
-                                "PnL réalisé",
-                                f"{pnl_realise_data_crypto['pnl_realise_montant']:+,.2f}€".replace(",", " "),
-                            )
+                            pnl_realise_crypto = pnl_realise_data_crypto["pnl_realise_montant"]
+                            st.metric("PnL Réalisé €", f"{pnl_realise_crypto:+,.2f}€".replace(",", " "))
                         
                         with col2:
-                            st.metric(
-                                "PnL non réalisé",
-                                f"{pnl_non_realise_crypto:+,.2f}€".replace(",", " "),
-                            )
+                            pnl_realise_pct_crypto = pnl_realise_data_crypto["pnl_realise_pourcentage"]
+                            st.metric("PnL Réalisé %", f"{pnl_realise_pct_crypto:+.1f}%")
                         
                         with col3:
-                            if pnl_realise_data_crypto["quantite_vendue_totale"] > 0:
-                                st.metric(
-                                    "Prix moyen vente",
-                                    f"{pnl_realise_data_crypto['prix_moyen_vente']:,.2f}€".replace(",", " "),
-                                )
+                            st.metric("PnL Non Réalisé €", f"{pnl_non_realise_crypto:+,.2f}€".replace(",", " "))
                         
                         with col4:
-                            st.metric(
-                                "Quantité vendue",
-                                f"{pnl_realise_data_crypto['quantite_vendue_totale']:.8f}",
-                            )
+                            quantite_vendue_crypto = pnl_realise_data_crypto["quantite_vendue_totale"]
+                            st.metric("Quantité Vendue", f"{quantite_vendue_crypto:.8f}")
+                        
+                        # Deuxième ligne : Prix moyens
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            prix_moyen_vente_crypto = pnl_realise_data_crypto["prix_moyen_vente"]
+                            st.metric("Prix Moyen Vente", f"{prix_moyen_vente_crypto:,.2f}€".replace(",", " "))
+                        
+                        with col2:
+                            prix_moyen_achat_vendu_crypto = pnl_realise_data_crypto["prix_moyen_achat_vendu"]
+                            st.metric("Prix Moyen Achat Vendu", f"{prix_moyen_achat_vendu_crypto:,.2f}€".replace(",", " "))
+                        
+                        with col3:
+                            # Différence de prix
+                            diff_prix_crypto = prix_moyen_vente_crypto - prix_moyen_achat_vendu_crypto
+                            st.metric("Différence Prix", f"{diff_prix_crypto:+,.2f}€".replace(",", " "))
+                        
+                        with col4:
+                            # Espace libre pour futur usage
+                            st.metric("", "")
+                        
+                        # Tableau détaillé des positions restantes
+                        st.markdown("#### 📋 Détail des Positions par Ligne d'Achat (FIFO)")
+                        # SOLUTION: Récupérer directement les données depuis Supabase pour éviter les corruptions
+                        raw_data_crypto = supabase.table("crypto").select("*").eq("symbole", symbole_selected_crypto.upper()).execute().data
+                        
+                        positions_restantes_crypto = business_logic.calculer_positions_restantes_fifo(
+                            raw_data_crypto, symbole_selected_crypto
+                        )
+                        
+                        if positions_restantes_crypto:
+                            # Préparer les données pour le tableau
+                            tableau_positions_crypto = []
+                            for pos in positions_restantes_crypto:
+                                date_obj = datetime.strptime(pos["date"], "%Y-%m-%d")
+                                tableau_positions_crypto.append({
+                                    "Date": date_obj.strftime("%d/%m/%Y"),
+                                    "Type": pos["type_operation"],
+                                    "Prix €": f"{pos['prix_unitaire']:,.2f}".replace(",", " "),
+                                    "Quantité Initiale": f"{pos['quantite_initiale']:.8f}",
+                                    "Quantité Restante": f"{pos['quantite_restante']:.8f}",
+                                    "Valeur Restante €": f"{pos['montant_restant']:,.2f}".replace(",", " "),
+                                    "% Vendu": f"{((pos['quantite_initiale'] - pos['quantite_restante']) / pos['quantite_initiale'] * 100):.1f}%" if pos['quantite_initiale'] > 0 else "0%"
+                                })
+                            
+                            df_positions_crypto = pd.DataFrame(tableau_positions_crypto)
+                            st.dataframe(df_positions_crypto, use_container_width=True, hide_index=True)
+                            
+                            # Résumé
+                            total_initial_crypto = sum([pos['montant_initial'] for pos in positions_restantes_crypto])
+                            total_restant_crypto = sum([pos['montant_restant'] for pos in positions_restantes_crypto])
+                            total_vendu_crypto = total_initial_crypto - total_restant_crypto
+                            st.info(f"📈 **Résumé :** {total_vendu_crypto:,.2f}€ vendu sur {total_initial_crypto:,.2f}€ initiaux ({total_vendu_crypto/total_initial_crypto*100:.1f}% du portefeuille initial)".replace(",", " "))
 
                 # Deuxième ligne : Les métriques de détail
                 col1, col2, col3 = st.columns(3)
