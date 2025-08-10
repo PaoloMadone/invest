@@ -193,8 +193,7 @@ def creer_donnees_revenu(mois: int, annee: int, montant: float) -> Dict:
 
 
 def creer_donnees_investissement(
-        date_achat: str, symbole: str, montant: float, prix_unitaire: float,
-        hors_budget: bool = False
+    date_achat: str, symbole: str, montant: float, prix_unitaire: float, hors_budget: bool = False
 ) -> Dict:
     """
     Crée un dictionnaire de données pour un investissement
@@ -222,11 +221,11 @@ def creer_donnees_investissement(
 
 
 def valider_donnees_vente(
-        montant: float,
-        prix_unitaire: float,
-        symbole: str,
-        quantite_vente: float,
-        investissements: List[Dict],
+    montant: float,
+    prix_unitaire: float,
+    symbole: str,
+    quantite_vente: float,
+    investissements: List[Dict],
 ) -> List[str]:
     """
     Valide les données d'une vente
@@ -292,7 +291,7 @@ def calculer_quantite_disponible(investissements: List[Dict], symbole: str) -> f
 
 
 def verifier_position_suffisante(
-        investissements: List[Dict], symbole: str, quantite_demandee: float
+    investissements: List[Dict], symbole: str, quantite_demandee: float
 ) -> bool:
     """
     Vérifie si on a suffisamment de quantité pour effectuer une vente
@@ -310,11 +309,11 @@ def verifier_position_suffisante(
 
 
 def creer_donnees_vente(
-        date_vente: str,
-        symbole: str,
-        montant: float,
-        prix_unitaire: float,
-        type_operation: str = "Vente",
+    date_vente: str,
+    symbole: str,
+    montant: float,
+    prix_unitaire: float,
+    type_operation: str = "Vente",
 ) -> Dict:
     """
     Crée un dictionnaire de données pour une vente

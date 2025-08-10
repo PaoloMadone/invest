@@ -265,7 +265,7 @@ def main():
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
             if bourse_with_perf and any(
-                    inv.get("pnl_montant") is not None for inv in bourse_with_perf
+                inv.get("pnl_montant") is not None for inv in bourse_with_perf
             ):
                 pnl_bourse = sum(
                     inv.get("pnl_montant", 0)
@@ -310,7 +310,7 @@ def main():
                     index=None,
                     placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                         "pour saisir manuellement",
+                    "pour saisir manuellement",
                 )
 
                 if symbole_choice == "🆕 Autre symbole...":
@@ -335,7 +335,7 @@ def main():
             hors_budget_bourse = st.checkbox(
                 "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant "
-                     "ou une conversion qui ne doit pas être déduit du budget",
+                "ou une conversion qui ne doit pas être déduit du budget",
                 key="bourse_hors_budget",
             )
 
@@ -534,9 +534,9 @@ def main():
                     # Ajouter les colonnes de performance si disponibles
                     styled_df = df_display  # Par défaut, pas de style
                     if (
-                            "prix_actuel" in df_bourse.columns
-                            and "pnl_montant" in df_bourse.columns
-                            and "pnl_pourcentage" in df_bourse.columns
+                        "prix_actuel" in df_bourse.columns
+                        and "pnl_montant" in df_bourse.columns
+                        and "pnl_pourcentage" in df_bourse.columns
                     ):
                         df_display["prix_actuel"] = df_bourse["prix_actuel"].apply(
                             lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -841,9 +841,7 @@ def main():
                         st.info(
                             f"📈 **Résumé :** {total_vendu:,.2f}€ vendu sur {total_initial:,.2f}€"
                             f" initiaux ({total_vendu / total_initial * 100:.1f}%"
-                            f" du portefeuille initial)".replace(
-                                ",", " "
-                            )
+                            f" du portefeuille initial)".replace(",", " ")
                         )
 
                 # Graphique d'évolution du prix avec points d'achat
@@ -926,10 +924,10 @@ def main():
 
                         # Version simplifiée temporaire
                         hover_texts = [
-                            (f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}"
-                             f"<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€").replace(
-                                ",", " "
-                            )
+                            (
+                                f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}"
+                                f"<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€"
+                            ).replace(",", " ")
                             for date, prix, montant in zip(dates_type, prix_type, montants_type)
                         ]
 
@@ -1008,9 +1006,9 @@ def main():
 
                 # Ajouter les colonnes de performance si disponibles
                 if (
-                        "prix_actuel" in df_symbole.columns
-                        and "pnl_montant" in df_symbole.columns
-                        and "pnl_pourcentage" in df_symbole.columns
+                    "prix_actuel" in df_symbole.columns
+                    and "pnl_montant" in df_symbole.columns
+                    and "pnl_pourcentage" in df_symbole.columns
                 ):
                     df_display_symbole["prix_actuel"] = df_symbole["prix_actuel"].apply(
                         lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -1080,7 +1078,7 @@ def main():
                         ]
                     st.dataframe(df_display_symbole, use_container_width=True)
 
-    with (tab_crypto):
+    with tab_crypto:
         st.header("Investissements Crypto")
 
         # Métriques spécifiques crypto
@@ -1109,7 +1107,7 @@ def main():
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
             if crypto_with_perf and any(
-                    inv.get("pnl_montant") is not None for inv in crypto_with_perf
+                inv.get("pnl_montant") is not None for inv in crypto_with_perf
             ):
                 pnl_crypto = sum(
                     inv.get("pnl_montant", 0)
@@ -1154,7 +1152,7 @@ def main():
                     index=None,
                     placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                         "pour saisir manuellement",
+                    "pour saisir manuellement",
                     key="crypto_symbole_select",
                 )
 
@@ -1181,7 +1179,7 @@ def main():
             hors_budget_crypto = st.checkbox(
                 "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant "
-                     "ou une conversion qui ne doit pas être déduit du budget",
+                "ou une conversion qui ne doit pas être déduit du budget",
                 key="crypto_hors_budget",
             )
 
@@ -1332,9 +1330,9 @@ def main():
                     # Ajouter les colonnes de performance si disponibles
                     styled_df = df_display  # Par défaut, pas de style
                     if (
-                            "prix_actuel" in df_crypto.columns
-                            and "pnl_montant" in df_crypto.columns
-                            and "pnl_pourcentage" in df_crypto.columns
+                        "prix_actuel" in df_crypto.columns
+                        and "pnl_montant" in df_crypto.columns
+                        and "pnl_pourcentage" in df_crypto.columns
                     ):
                         df_display["prix_actuel"] = df_crypto["prix_actuel"].apply(
                             lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -1496,8 +1494,7 @@ def main():
 
                 # Performance globale du titre
                 if perf_symbole_crypto and any(
-                        inv.get("valeur_actuelle")
-                        for inv in perf_symbole_crypto
+                    inv.get("valeur_actuelle") for inv in perf_symbole_crypto
                 ):
                     # Valeur actuelle = somme des valeurs actuelles
                     # des achats seulement (ventes = 0)
@@ -1610,8 +1607,7 @@ def main():
                             st.metric("", "")
 
                         # Tableau détaillé des positions restantes
-                        st.markdown("#### 📋 Détail des Positions"
-                                    " par Ligne d'Achat (FIFO)")
+                        st.markdown("#### 📋 Détail des Positions" " par Ligne d'Achat (FIFO)")
                         # SOLUTION: Récupérer directement les données depuis
                         # Supabase pour éviter les corruptions
                         raw_data_crypto = (
@@ -1637,13 +1633,11 @@ def main():
                                     {
                                         "Date": date_obj.strftime("%d/%m/%Y"),
                                         "Type": pos["type_operation"],
-                                        "Prix €": f"{pos['prix_unitaire']:,.2f}"
-                                        .replace(",", " "),
+                                        "Prix €": f"{pos['prix_unitaire']:,.2f}".replace(",", " "),
                                         "Quantité Initiale": f"{pos['quantite_initiale']:.8f}",
                                         "Quantité Restante": f"{pos['quantite_restante']:.8f}",
-                                        "Valeur Restante €": f"{pos['montant_restant']:,.2f}"
-                                        .replace(
-                                            ",", " "
+                                        "Valeur Restante €": (
+                                            f"{pos['montant_restant']:,.2f}".replace(",", " ")
                                         ),
                                         "% Vendu": (
                                             f"{((pos['quantite_initiale']
@@ -1668,14 +1662,12 @@ def main():
                                 [pos["montant_restant"] for pos in positions_restantes_crypto]
                             )
                             total_vendu_crypto = total_initial_crypto
-                            - total_restant_crypto
+                            -total_restant_crypto
                             st.info(
                                 f"📈 **Résumé :** {total_vendu_crypto:,.2f}€ vendu"
                                 f" sur {total_initial_crypto:,.2f}€ initiaux"
                                 f" ({total_vendu_crypto / total_initial_crypto * 100:.1f}"
-                                f"% du portefeuille initial)".replace(
-                                    ",", " "
-                                )
+                                f"% du portefeuille initial)".replace(",", " ")
                             )
 
                 # Deuxième ligne : Les métriques de détail
@@ -1683,7 +1675,7 @@ def main():
 
                 with col1:
                     if perf_symbole_crypto and any(
-                            inv.get("prix_actuel") for inv in perf_symbole_crypto
+                        inv.get("prix_actuel") for inv in perf_symbole_crypto
                     ):
                         prix_actuel_crypto = next(
                             (
@@ -1710,7 +1702,7 @@ def main():
 
                 # Créer le graphique seulement si on a des données de prix
                 if perf_symbole_crypto and any(
-                        inv.get("prix_actuel") for inv in perf_symbole_crypto
+                    inv.get("prix_actuel") for inv in perf_symbole_crypto
                 ):
 
                     # Préparer les données pour le graphique
@@ -1798,11 +1790,11 @@ def main():
 
                         # Version simplifiée temporaire
                         hover_texts_crypto = [
-                            (f"Date: {date.strftime('%d/%m/%Y')}"
-                             f"<br>Type: {type_op}<br>Prix: {prix:,.2f}€"
-                             f"<br>Montant: {montant:,.2f}€").replace(
-                                ",", " "
-                            )
+                            (
+                                f"Date: {date.strftime('%d/%m/%Y')}"
+                                f"<br>Type: {type_op}<br>Prix: {prix:,.2f}€"
+                                f"<br>Montant: {montant:,.2f}€"
+                            ).replace(",", " ")
                             for date, prix, montant in zip(dates_type, prix_type, montants_type)
                         ]
 
@@ -1829,10 +1821,9 @@ def main():
                             y=prix_moyen_achat_crypto,
                             line_dash="dot",
                             line_color="green",
-                            annotation_text=(f"Prix moyen d'achat:"
-                                             f" {prix_moyen_achat_crypto:,.2f}€").replace(
-                                ",", " "
-                            ),
+                            annotation_text=(
+                                f"Prix moyen d'achat:" f" {prix_moyen_achat_crypto:,.2f}€"
+                            ).replace(",", " "),
                             annotation_position="top right",
                         )
 
@@ -1882,9 +1873,9 @@ def main():
 
                 # Ajouter les colonnes de performance si disponibles
                 if (
-                        "prix_actuel" in df_symbole_crypto.columns
-                        and "pnl_montant" in df_symbole_crypto.columns
-                        and "pnl_pourcentage" in df_symbole_crypto.columns
+                    "prix_actuel" in df_symbole_crypto.columns
+                    and "pnl_montant" in df_symbole_crypto.columns
+                    and "pnl_pourcentage" in df_symbole_crypto.columns
                 ):
                     df_display_symbole_crypto["prix_actuel"] = df_symbole_crypto[
                         "prix_actuel"

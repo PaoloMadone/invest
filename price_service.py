@@ -68,7 +68,7 @@ class PriceService:
             return None
 
     def _try_multiple_symbols(
-            self, base_symbol: str, show_log: bool = True
+        self, base_symbol: str, show_log: bool = True
     ) -> Optional[Tuple[str, float]]:
         """
         Essaie plusieurs variantes d'un symbole pour trouver le bon
@@ -147,7 +147,7 @@ class PriceService:
             return None
 
     def get_current_price(
-            self, symbol: str, asset_type: str, show_log: bool = True
+        self, symbol: str, asset_type: str, show_log: bool = True
     ) -> Optional[float]:
         """
         Récupère le prix actuel d'un actif selon son type
@@ -188,7 +188,7 @@ class PriceService:
             return None
 
     def calculate_investment_performance(
-            self, investments: List[Dict], asset_type: str
+        self, investments: List[Dict], asset_type: str
     ) -> List[Dict]:
         """
         Calcule la performance de chaque investissement (achats ET ventes)
@@ -372,7 +372,7 @@ class PriceService:
         }
 
     def calculate_portfolio_summary(
-            self, crypto_investments: List[Dict], stock_investments: List[Dict]
+        self, crypto_investments: List[Dict], stock_investments: List[Dict]
     ) -> Dict:
         """
         Calcule un résumé des performances du portfolio complet (avec PnL réalisé/non réalisé)
@@ -527,7 +527,7 @@ class PriceService:
             return None, None
 
     def save_user_choice(
-            self, user_symbol: str, chosen_yahoo_symbol: str, company_name: str = None
+        self, user_symbol: str, chosen_yahoo_symbol: str, company_name: str = None
     ) -> Optional[float]:
         """
         Sauvegarde le choix de l'utilisateur et retourne le prix
