@@ -312,6 +312,7 @@ class PriceService:
 
         # Calcul FIFO
         import copy
+
         remaining_purchases = copy.deepcopy(purchases)  # Queue des achats restants
         total_pnl_realized = 0.0
         total_quantity_sold = 0.0
