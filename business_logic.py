@@ -193,7 +193,8 @@ def creer_donnees_revenu(mois: int, annee: int, montant: float) -> Dict:
 
 
 def creer_donnees_investissement(
-    date_achat: str, symbole: str, montant: float, prix_unitaire: float, hors_budget: bool = False
+        date_achat: str, symbole: str, montant: float, prix_unitaire: float,
+        hors_budget: bool = False
 ) -> Dict:
     """
     Crée un dictionnaire de données pour un investissement
@@ -221,11 +222,11 @@ def creer_donnees_investissement(
 
 
 def valider_donnees_vente(
-    montant: float,
-    prix_unitaire: float,
-    symbole: str,
-    quantite_vente: float,
-    investissements: List[Dict],
+        montant: float,
+        prix_unitaire: float,
+        symbole: str,
+        quantite_vente: float,
+        investissements: List[Dict],
 ) -> List[str]:
     """
     Valide les données d'une vente
@@ -258,7 +259,8 @@ def valider_donnees_vente(
     quantite_disponible = calculer_quantite_disponible(investissements, symbole)
     if quantite_vente > quantite_disponible:
         erreurs.append(
-            f"Quantité insuffisante. Disponible: {quantite_disponible:.4f}, demandée: {quantite_vente:.4f}"
+            f"Quantité insuffisante. Disponible:"
+            f" {quantite_disponible:.4f}, demandée: {quantite_vente:.4f}"
         )
 
     return erreurs
@@ -290,7 +292,7 @@ def calculer_quantite_disponible(investissements: List[Dict], symbole: str) -> f
 
 
 def verifier_position_suffisante(
-    investissements: List[Dict], symbole: str, quantite_demandee: float
+        investissements: List[Dict], symbole: str, quantite_demandee: float
 ) -> bool:
     """
     Vérifie si on a suffisamment de quantité pour effectuer une vente
@@ -308,11 +310,11 @@ def verifier_position_suffisante(
 
 
 def creer_donnees_vente(
-    date_vente: str,
-    symbole: str,
-    montant: float,
-    prix_unitaire: float,
-    type_operation: str = "Vente",
+        date_vente: str,
+        symbole: str,
+        montant: float,
+        prix_unitaire: float,
+        type_operation: str = "Vente",
 ) -> Dict:
     """
     Crée un dictionnaire de données pour une vente
@@ -335,7 +337,8 @@ def creer_donnees_vente(
         "symbole": symbole.upper(),
         "montant": montant,  # Montant positif pour l'affichage
         "prix_unitaire": prix_unitaire,
-        "quantite": quantite,  # Quantité positive pour l'affichage, gérée comme négative dans les calculs
+        "quantite": quantite,  # Quantité positive
+        # pour l'affichage, gérée comme négative dans les calculs
         "hors_budget": True,  # Les ventes sont toujours hors budget (ne consomment pas le budget)
         "type_operation": type_operation,
     }

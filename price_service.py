@@ -53,7 +53,8 @@ class PriceService:
                     self.cache[f"crypto_{symbol}"] = {"price": price, "timestamp": time.time()}
                     if show_log:
                         print(
-                            f"Mapping crypto trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
+                            f"Mapping crypto trouvé:"
+                            f" {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
                         )
                     return price
 
@@ -67,7 +68,7 @@ class PriceService:
             return None
 
     def _try_multiple_symbols(
-        self, base_symbol: str, show_log: bool = True
+            self, base_symbol: str, show_log: bool = True
     ) -> Optional[Tuple[str, float]]:
         """
         Essaie plusieurs variantes d'un symbole pour trouver le bon
@@ -99,7 +100,8 @@ class PriceService:
                     price = float(hist["Close"].iloc[-1])
                     if show_log:
                         print(
-                            f"Symbole bourse trouvé: {base_symbol} -> {variant} (prix: {price:.2f}€)"
+                            f"Symbole bourse trouvé:"
+                            f" {base_symbol} -> {variant} (prix: {price:.2f}€)"
                         )
                     return variant, price
 
@@ -145,7 +147,7 @@ class PriceService:
             return None
 
     def get_current_price(
-        self, symbol: str, asset_type: str, show_log: bool = True
+            self, symbol: str, asset_type: str, show_log: bool = True
     ) -> Optional[float]:
         """
         Récupère le prix actuel d'un actif selon son type
@@ -173,7 +175,8 @@ class PriceService:
                         self.cache[f"stock_{symbol}"] = {"price": price, "timestamp": time.time()}
                         if show_log:
                             print(
-                                f"Mapping bourse trouvé: {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
+                                f"Mapping bourse trouvé:"
+                                f" {symbol} -> {learned_symbol} (prix: {price:.2f}€)"
                             )
                         return price
                 except Exception:
@@ -185,7 +188,7 @@ class PriceService:
             return None
 
     def calculate_investment_performance(
-        self, investments: List[Dict], asset_type: str
+            self, investments: List[Dict], asset_type: str
     ) -> List[Dict]:
         """
         Calcule la performance de chaque investissement (achats ET ventes)
@@ -369,7 +372,7 @@ class PriceService:
         }
 
     def calculate_portfolio_summary(
-        self, crypto_investments: List[Dict], stock_investments: List[Dict]
+            self, crypto_investments: List[Dict], stock_investments: List[Dict]
     ) -> Dict:
         """
         Calcule un résumé des performances du portfolio complet (avec PnL réalisé/non réalisé)
@@ -396,7 +399,6 @@ class PriceService:
 
             # Séparer achats et ventes pour calculs corrects
             purchases = [inv for inv in investments if inv.get("type_operation") != "Vente"]
-            sales = [inv for inv in investments if inv.get("type_operation") == "Vente"]
 
             # Valeur initiale = somme des achats seulement
             initial_value = sum([inv["montant"] for inv in purchases])
@@ -525,7 +527,7 @@ class PriceService:
             return None, None
 
     def save_user_choice(
-        self, user_symbol: str, chosen_yahoo_symbol: str, company_name: str = None
+            self, user_symbol: str, chosen_yahoo_symbol: str, company_name: str = None
     ) -> Optional[float]:
         """
         Sauvegarde le choix de l'utilisateur et retourne le prix

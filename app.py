@@ -1,4 +1,3 @@
-import copy
 import json
 import math
 import os
@@ -170,7 +169,8 @@ def main():
     # Calculer les performances globales au chargement si nécessaire
     portfolio_summary = st.session_state.get("portfolio_summary")
 
-    # Ne calculer que si on n'a pas de résumé ET qu'on n'est pas en train de gérer des choix de symboles
+    # Ne calculer que si on n'a pas de résumé ET qu'on n'est pas en train de
+    # gérer des choix de symboles
     should_calculate_performance = (
         not portfolio_summary
         and (data["bourse"] or data["crypto"])
@@ -211,7 +211,8 @@ def main():
             crypto_cache_key = f"crypto_perf_{len(data['crypto'])}"
             st.session_state[crypto_cache_key] = crypto_with_perf
 
-    # Bouton pour actualiser les prix - affiché seulement après le calcul des performances OU s'il n'y a pas d'investissements
+    # Bouton pour actualiser les prix - affiché seulement après le calcul
+    # des performances OU s'il n'y a pas d'investissements
     if portfolio_summary or not (data["bourse"] or data["crypto"]):
         col_refresh, col_empty = st.columns([1, 5])
         with col_refresh:
@@ -264,7 +265,7 @@ def main():
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
             if bourse_with_perf and any(
-                inv.get("pnl_montant") is not None for inv in bourse_with_perf
+                    inv.get("pnl_montant") is not None for inv in bourse_with_perf
             ):
                 pnl_bourse = sum(
                     inv.get("pnl_montant", 0)
@@ -309,7 +310,7 @@ def main():
                     index=None,
                     placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                    "pour saisir manuellement",
+                         "pour saisir manuellement",
                 )
 
                 if symbole_choice == "🆕 Autre symbole...":
@@ -334,7 +335,7 @@ def main():
             hors_budget_bourse = st.checkbox(
                 "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant "
-                "ou une conversion qui ne doit pas être déduit du budget",
+                     "ou une conversion qui ne doit pas être déduit du budget",
                 key="bourse_hors_budget",
             )
 
@@ -533,9 +534,9 @@ def main():
                     # Ajouter les colonnes de performance si disponibles
                     styled_df = df_display  # Par défaut, pas de style
                     if (
-                        "prix_actuel" in df_bourse.columns
-                        and "pnl_montant" in df_bourse.columns
-                        and "pnl_pourcentage" in df_bourse.columns
+                            "prix_actuel" in df_bourse.columns
+                            and "pnl_montant" in df_bourse.columns
+                            and "pnl_pourcentage" in df_bourse.columns
                     ):
                         df_display["prix_actuel"] = df_bourse["prix_actuel"].apply(
                             lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -671,7 +672,8 @@ def main():
                     inv for inv in investissements_symbole if inv.get("type_operation") == "Vente"
                 ]
 
-                # Total investi = somme des achats seulement (les ventes ne comptent pas comme investissement)
+                # Total investi = somme des achats seulement
+                # (les ventes ne comptent pas comme investissement)
                 total_investi_symbole = sum([inv["montant"] for inv in achats_symbole])
 
                 # Prix moyen d'achat basé sur les achats seulement
@@ -791,7 +793,8 @@ def main():
                     # Tableau détaillé des positions restantes
                     st.markdown("#### 📋 Détail des Positions par Ligne d'Achat (FIFO)")
 
-                    # SOLUTION: Récupérer directement les données depuis Supabase pour éviter les corruptions
+                    # SOLUTION: Récupérer directement les données
+                    # depuis Supabase pour éviter les corruptions
                     raw_data = (
                         supabase.table("bourse")
                         .select("*")
@@ -820,7 +823,8 @@ def main():
                                         ",", " "
                                     ),
                                     "% Vendu": (
-                                        f"{((pos['quantite_initiale'] - pos['quantite_restante']) / pos['quantite_initiale'] * 100):.1f}%"
+                                        f"{((pos['quantite_initiale'] - pos['quantite_restante'])
+                                            / pos['quantite_initiale'] * 100):.1f}%"
                                         if pos["quantite_initiale"] > 0
                                         else "0%"
                                     ),
@@ -835,7 +839,9 @@ def main():
                         total_restant = sum([pos["montant_restant"] for pos in positions_restantes])
                         total_vendu = total_initial - total_restant
                         st.info(
-                            f"📈 **Résumé :** {total_vendu:,.2f}€ vendu sur {total_initial:,.2f}€ initiaux ({total_vendu/total_initial*100:.1f}% du portefeuille initial)".replace(
+                            f"📈 **Résumé :** {total_vendu:,.2f}€ vendu sur {total_initial:,.2f}€"
+                            f" initiaux ({total_vendu / total_initial * 100:.1f}%"
+                            f" du portefeuille initial)".replace(
                                 ",", " "
                             )
                         )
@@ -900,21 +906,28 @@ def main():
 
                         # Préparer les hover texts - TEMPORAIREMENT COMMENTÉ
                         # hover_texts = []
-                        # for date, prix, montant in zip(dates_type, prix_type, montants_type):
-                        #     base_text = f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(",", " ")
+                        # for date, prix, montant
+                        # in zip(dates_type, prix_type, montants_type):
+                        #     base_text = f"Date:
+                        #     {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:
+                        #     ,.2f}€<br>Montant: {montant:,.2f}€".replace(",", " ")
                         #
                         #     if type_op == "Vente":
                         #         # Pour les ventes, ajouter le PnL réalisé
-                        #         pnl_realise_data = st.session_state.price_service.calculate_realized_pnl(
+                        #         pnl_realise_data =
+                        #         st.session_state.price_service.calculate_realized_pnl(
                         #             data["bourse"], symbole_selected
                         #         )
-                        #         base_text += f"<br>PnL réalisé: {pnl_realise_data['pnl_realise_montant']:+,.2f}€".replace(",", " ")
+                        #         base_text += f"<br>PnL réalisé:
+                        #         {pnl_realise_data['pnl_realise_montant']
+                        #         :+,.2f}€".replace(",", " ")
                         #
                         #     hover_texts.append(base_text)
 
                         # Version simplifiée temporaire
                         hover_texts = [
-                            f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(
+                            (f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}"
+                             f"<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€").replace(
                                 ",", " "
                             )
                             for date, prix, montant in zip(dates_type, prix_type, montants_type)
@@ -995,9 +1008,9 @@ def main():
 
                 # Ajouter les colonnes de performance si disponibles
                 if (
-                    "prix_actuel" in df_symbole.columns
-                    and "pnl_montant" in df_symbole.columns
-                    and "pnl_pourcentage" in df_symbole.columns
+                        "prix_actuel" in df_symbole.columns
+                        and "pnl_montant" in df_symbole.columns
+                        and "pnl_pourcentage" in df_symbole.columns
                 ):
                     df_display_symbole["prix_actuel"] = df_symbole["prix_actuel"].apply(
                         lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -1067,7 +1080,7 @@ def main():
                         ]
                     st.dataframe(df_display_symbole, use_container_width=True)
 
-    with tab_crypto:
+    with (tab_crypto):
         st.header("Investissements Crypto")
 
         # Métriques spécifiques crypto
@@ -1096,7 +1109,7 @@ def main():
         with col_m5:
             # Calculer le P&L à partir des données individuelles si disponibles
             if crypto_with_perf and any(
-                inv.get("pnl_montant") is not None for inv in crypto_with_perf
+                    inv.get("pnl_montant") is not None for inv in crypto_with_perf
             ):
                 pnl_crypto = sum(
                     inv.get("pnl_montant", 0)
@@ -1141,7 +1154,7 @@ def main():
                     index=None,
                     placeholder="-- Choisir un symbole --",
                     help="Choisissez un symbole existant ou 'Autre symbole...' "
-                    "pour saisir manuellement",
+                         "pour saisir manuellement",
                     key="crypto_symbole_select",
                 )
 
@@ -1168,7 +1181,7 @@ def main():
             hors_budget_crypto = st.checkbox(
                 "Hors budget (conversion/existant)",
                 help="Cochez si c'est un investissement existant "
-                "ou une conversion qui ne doit pas être déduit du budget",
+                     "ou une conversion qui ne doit pas être déduit du budget",
                 key="crypto_hors_budget",
             )
 
@@ -1319,9 +1332,9 @@ def main():
                     # Ajouter les colonnes de performance si disponibles
                     styled_df = df_display  # Par défaut, pas de style
                     if (
-                        "prix_actuel" in df_crypto.columns
-                        and "pnl_montant" in df_crypto.columns
-                        and "pnl_pourcentage" in df_crypto.columns
+                            "prix_actuel" in df_crypto.columns
+                            and "pnl_montant" in df_crypto.columns
+                            and "pnl_pourcentage" in df_crypto.columns
                     ):
                         df_display["prix_actuel"] = df_crypto["prix_actuel"].apply(
                             lambda x: f"{x:,.2f}€".replace(",", " ") if x is not None else "N/A"
@@ -1462,7 +1475,8 @@ def main():
                     if inv.get("type_operation") == "Vente"
                 ]
 
-                # Total investi = somme des achats seulement (les ventes ne comptent pas comme investissement)
+                # Total investi = somme des achats seulement
+                # (les ventes ne comptent pas comme investissement)
                 total_investi_symbole_crypto = sum(
                     [inv["montant"] for inv in achats_symbole_crypto]
                 )
@@ -1482,9 +1496,11 @@ def main():
 
                 # Performance globale du titre
                 if perf_symbole_crypto and any(
-                    inv.get("valeur_actuelle") for inv in perf_symbole_crypto
+                        inv.get("valeur_actuelle")
+                        for inv in perf_symbole_crypto
                 ):
-                    # Valeur actuelle = somme des valeurs actuelles des achats seulement (ventes = 0)
+                    # Valeur actuelle = somme des valeurs actuelles
+                    # des achats seulement (ventes = 0)
                     perf_achats_crypto = [
                         inv for inv in perf_symbole_crypto if inv.get("type_operation") != "Vente"
                     ]
@@ -1594,8 +1610,10 @@ def main():
                             st.metric("", "")
 
                         # Tableau détaillé des positions restantes
-                        st.markdown("#### 📋 Détail des Positions par Ligne d'Achat (FIFO)")
-                        # SOLUTION: Récupérer directement les données depuis Supabase pour éviter les corruptions
+                        st.markdown("#### 📋 Détail des Positions"
+                                    " par Ligne d'Achat (FIFO)")
+                        # SOLUTION: Récupérer directement les données depuis
+                        # Supabase pour éviter les corruptions
                         raw_data_crypto = (
                             supabase.table("crypto")
                             .select("*")
@@ -1619,14 +1637,18 @@ def main():
                                     {
                                         "Date": date_obj.strftime("%d/%m/%Y"),
                                         "Type": pos["type_operation"],
-                                        "Prix €": f"{pos['prix_unitaire']:,.2f}".replace(",", " "),
+                                        "Prix €": f"{pos['prix_unitaire']:,.2f}"
+                                        .replace(",", " "),
                                         "Quantité Initiale": f"{pos['quantite_initiale']:.8f}",
                                         "Quantité Restante": f"{pos['quantite_restante']:.8f}",
-                                        "Valeur Restante €": f"{pos['montant_restant']:,.2f}".replace(
+                                        "Valeur Restante €": f"{pos['montant_restant']:,.2f}"
+                                        .replace(
                                             ",", " "
                                         ),
                                         "% Vendu": (
-                                            f"{((pos['quantite_initiale'] - pos['quantite_restante']) / pos['quantite_initiale'] * 100):.1f}%"
+                                            f"{((pos['quantite_initiale']
+                                                 - pos['quantite_restante'])
+                                                / pos['quantite_initiale'] * 100):.1f}%"
                                             if pos["quantite_initiale"] > 0
                                             else "0%"
                                         ),
@@ -1645,9 +1667,13 @@ def main():
                             total_restant_crypto = sum(
                                 [pos["montant_restant"] for pos in positions_restantes_crypto]
                             )
-                            total_vendu_crypto = total_initial_crypto - total_restant_crypto
+                            total_vendu_crypto = total_initial_crypto
+                            - total_restant_crypto
                             st.info(
-                                f"📈 **Résumé :** {total_vendu_crypto:,.2f}€ vendu sur {total_initial_crypto:,.2f}€ initiaux ({total_vendu_crypto/total_initial_crypto*100:.1f}% du portefeuille initial)".replace(
+                                f"📈 **Résumé :** {total_vendu_crypto:,.2f}€ vendu"
+                                f" sur {total_initial_crypto:,.2f}€ initiaux"
+                                f" ({total_vendu_crypto / total_initial_crypto * 100:.1f}"
+                                f"% du portefeuille initial)".replace(
                                     ",", " "
                                 )
                             )
@@ -1657,7 +1683,7 @@ def main():
 
                 with col1:
                     if perf_symbole_crypto and any(
-                        inv.get("prix_actuel") for inv in perf_symbole_crypto
+                            inv.get("prix_actuel") for inv in perf_symbole_crypto
                     ):
                         prix_actuel_crypto = next(
                             (
@@ -1684,7 +1710,7 @@ def main():
 
                 # Créer le graphique seulement si on a des données de prix
                 if perf_symbole_crypto and any(
-                    inv.get("prix_actuel") for inv in perf_symbole_crypto
+                        inv.get("prix_actuel") for inv in perf_symbole_crypto
                 ):
 
                     # Préparer les données pour le graphique
@@ -1753,20 +1779,28 @@ def main():
                         # Préparer les hover texts - TEMPORAIREMENT COMMENTÉ
                         # hover_texts_crypto = []
                         # for date, prix, montant in zip(dates_type, prix_type, montants_type):
-                        #     base_text = f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(",", " ")
+                        #     base_text = f"Date:
+                        #     {date.strftime('%d/%m/%Y')}<br>Type: {type_op}
+                        #     <br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}
+                        #     €".replace(",", " ")
                         #
                         #     if type_op == "Vente":
                         #         # Pour les ventes, ajouter le PnL réalisé
-                        #         pnl_realise_data_crypto = st.session_state.price_service.calculate_realized_pnl(
+                        #         pnl_realise_data_crypto =
+                        #         st.session_state.price_service.calculate_realized_pnl(
                         #             data["crypto"], symbole_selected_crypto
                         #         )
-                        #         base_text += f"<br>PnL réalisé: {pnl_realise_data_crypto['pnl_realise_montant']:+,.2f}€".replace(",", " ")
+                        #         base_text += f"<br>PnL réalisé:
+                        #         {pnl_realise_data_crypto['pnl_realise_montant']
+                        #         :+,.2f}€".replace(",", " ")
                         #
                         #     hover_texts_crypto.append(base_text)
 
                         # Version simplifiée temporaire
                         hover_texts_crypto = [
-                            f"Date: {date.strftime('%d/%m/%Y')}<br>Type: {type_op}<br>Prix: {prix:,.2f}€<br>Montant: {montant:,.2f}€".replace(
+                            (f"Date: {date.strftime('%d/%m/%Y')}"
+                             f"<br>Type: {type_op}<br>Prix: {prix:,.2f}€"
+                             f"<br>Montant: {montant:,.2f}€").replace(
                                 ",", " "
                             )
                             for date, prix, montant in zip(dates_type, prix_type, montants_type)
@@ -1795,7 +1829,8 @@ def main():
                             y=prix_moyen_achat_crypto,
                             line_dash="dot",
                             line_color="green",
-                            annotation_text=f"Prix moyen d'achat: {prix_moyen_achat_crypto:,.2f}€".replace(
+                            annotation_text=(f"Prix moyen d'achat:"
+                                             f" {prix_moyen_achat_crypto:,.2f}€").replace(
                                 ",", " "
                             ),
                             annotation_position="top right",
@@ -1847,9 +1882,9 @@ def main():
 
                 # Ajouter les colonnes de performance si disponibles
                 if (
-                    "prix_actuel" in df_symbole_crypto.columns
-                    and "pnl_montant" in df_symbole_crypto.columns
-                    and "pnl_pourcentage" in df_symbole_crypto.columns
+                        "prix_actuel" in df_symbole_crypto.columns
+                        and "pnl_montant" in df_symbole_crypto.columns
+                        and "pnl_pourcentage" in df_symbole_crypto.columns
                 ):
                     df_display_symbole_crypto["prix_actuel"] = df_symbole_crypto[
                         "prix_actuel"

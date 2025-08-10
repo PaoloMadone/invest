@@ -8,16 +8,10 @@ Test d'intégration pour valider toute la chaîne fonctionnelle :
 Ce test simule un workflow complet sans utiliser Supabase.
 """
 
-import json
-import os
-import tempfile
-from datetime import date
 from unittest.mock import Mock, patch
 
-import pytest
 
 from business_logic import (
-    calculer_investissements_automatiques,
     calculer_positions_restantes_fifo,
     calculer_quantite_disponible,
     creer_donnees_investissement,
@@ -236,7 +230,7 @@ class TestIntegration:
         assert position_achat3["quantite_restante"] == 30.0  # Pas touché
 
         # Test PnL réalisé
-        with patch.object(self.price_service, "get_current_price", lambda s, t, l=True: 25.0):
+        with patch.object(self.price_service, "get_current_price", lambda s, t, logs=True: 25.0):
             pnl_data = self.price_service.calculate_realized_pnl(investments_db, "XYZ")
 
         # PnL attendu FIFO :
